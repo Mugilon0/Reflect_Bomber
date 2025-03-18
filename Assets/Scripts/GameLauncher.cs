@@ -91,7 +91,7 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
         // ロビーUIの更新
         int playerCount = runner.ActivePlayers.Count();
 
-        //LobbyUIManager.Instance.UpdatePlayerCountUI(playerCount); ロビーでテキストを表示するスクリプトかいたら戻す
+        LobbyUIManager.Instance.UpdatePlayerCountUI(playerCount); // ロビーでテキストを表示するスクリプトかいたら戻す
 
 
     }
@@ -118,7 +118,7 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
 
         Debug.Log($"現在のロビー参加人数: {playerCount}");
         // UI更新
-        //LobbyUIManager.Instance.UpdatePlayerCountUI(playerCount);　 ロビーでテキストを表示するスクリプトかいたら戻す
+        LobbyUIManager.Instance.UpdatePlayerCountUI(playerCount);// ロビーでテキストを表示するスクリプトかいたら戻す
 
     }
 
