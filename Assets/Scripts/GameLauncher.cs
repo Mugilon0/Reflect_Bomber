@@ -44,6 +44,10 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
 
         List<SessionInfo> sessionList = new List<SessionInfo>();
 
+        await System.Threading.Tasks.Task.Delay(1000); // 1•b‘Ò‹@i’²®‰Âj ‹­ˆø‚È‚â‚è‚©‚½‚ç‚µ‚¢
+
+
+
 
         string lobbyName = GetAvailableLobby();
 
