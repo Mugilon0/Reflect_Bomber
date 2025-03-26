@@ -40,6 +40,7 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
         {
             _runner = gameObject.AddComponent<NetworkRunner>();
             _runner.ProvideInput = false; // ロビーでは入力は不要
+            _runner.AddCallbacks(this);
         }
 
         List<SessionInfo> sessionList = new List<SessionInfo>();
@@ -47,15 +48,22 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
         await System.Threading.Tasks.Task.Delay(1000); // 1秒待機（調整可） 強引なやりかたらしい
 
 
-
-
         string lobbyName = GetAvailableLobby();
+
+
+
+        //Dictionary<string, SessionProperty> sessionProperties = new Dictionary<string, SessionProperty>
+        //{
+        //    { "MaxPlayers", new SessionProperty(4) } //  MAX_PLAYERS_IN_LOBBY 
+        //}; //added
 
 
         await _runner.StartGame(new StartGameArgs()
         {
-            GameMode = GameMode.AutoHostOrClient,
+            GameMode = GameMode.AutoHostOrClient, //GameMode.Hostかも
             SessionName = lobbyName,
+            // PlayerCount = MAX_PLAYERS_IN_LOBBY, // 上限を設定 PlayerCountは定義されてないしいらないかも
+            //SessionProperties = sessionProperties,
             Scene = 1,
             SceneManager = gameObject.AddComponent<NetworkSceneManagerDefault>()
         });
@@ -71,6 +79,14 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
     {
         foreach (var session in _cachedSessionList)
         {
+            // すでに最大人数ならスキップ
+            if (session.PlayerCount >= MAX_PLAYERS_IN_LOBBY)
+            {
+                Debug.Log($"ロビー {session.Name} は満員 (現在 {session.PlayerCount}/4)");
+                continue;
+            } //add 3/19
+
+
             if (session.PlayerCount < MAX_PLAYERS_IN_LOBBY)
             {
                 Debug.Log($"既存のロビー {session.Name} に参加 (現在 {session.PlayerCount}/4)");
@@ -91,9 +107,16 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
 
 
 
-
         // ロビーUIの更新
         int playerCount = runner.ActivePlayers.Count();
+
+        // もし4人を超えたらキック
+        if (playerCount > MAX_PLAYERS_IN_LOBBY)
+        {
+            Debug.LogWarning($"プレイヤー数が {MAX_PLAYERS_IN_LOBBY} を超えたため、{player.PlayerId} をキックします");
+            runner.Disconnect(player);
+        } //add 3/19
+
 
         LobbyUIManager.Instance.UpdatePlayerCountUI(playerCount); // ロビーでテキストを表示するスクリプトかいたら戻す
 
@@ -107,10 +130,19 @@ public class GameLauncher : MonoBehaviour, INetworkRunnerCallbacks
 
     public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList)
     {
+        Debug.Log("OnSessionListUpdated() が呼ばれた！");
         _cachedSessionList = sessionList;
+
         int playerCount = 0;
 
         _lobbyPlayerCount.Clear();
+        Debug.Log("ロビーリスト更新！");
+        if (sessionList.Count == 0)
+        {
+            Debug.LogWarning("セッションリストが空です！ロビーが取得できていない可能性あり。");
+        }
+
+
         foreach (var session in sessionList)
         {
             _lobbyPlayerCount[session.Name] = session.PlayerCount;
