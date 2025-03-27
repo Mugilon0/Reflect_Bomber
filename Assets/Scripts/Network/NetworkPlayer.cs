@@ -7,9 +7,10 @@ using UnityEngine.SceneManagement;
 
 public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 {
+
     public static NetworkPlayer Local { get; set; } // 入力権限があるプレイヤーはローカル
 
-
+    public Transform playerModel; // レイヤーを変えるのにtransformにアクセスする必要がある
 
     // Start is called before the first frame update
     void Start()
@@ -22,10 +23,26 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
         if (Object.HasInputAuthority) // これないと全てのクライアントで実行される1
         {
             Local = this; // ローカルプレイヤーの参照
+
+            // Sets the layer of the local players model
+            Utils.SetRenderLayerInChildren(playerModel, LayerMask.NameToLayer("LocalPlayerModel")); //　レイヤーを設定　目はレンダリングされなくなる
+
+            // Disable main camera
+            Camera.main.gameObject.SetActive(false); //ローカルカメラを使用するときはメインカメラは無効にする
+
             Debug.Log("Spawned local player");
         }
         else
         {
+            // Disable the camera if we are not the local player
+            Camera localCamera = GetComponentInChildren<Camera>(); // ローカルカメラにアクセスし、子でカメラを取得
+            localCamera.enabled = false; // 5.11
+
+            // Only 1 audio listener is allowed in the scene so disable remote players audio listener 
+            AudioListener audioListener = GetComponentInChildren<AudioListener>(); // リモートプレイヤーでも無効にする
+            audioListener.enabled = false;
+
+
             Debug.Log("Spawned remote player"); //そうでないならリモートプレイヤー
         }
     }
