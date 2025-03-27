@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public static class Utils {
-    public static Vector3 GetRandomSpawnPoint()
+    public static Vector3 GetRandomSpawnPoint() //スポーン用にランダムな座標を用意する
     {
         return new Vector3(Random.Range(-20, 20), 4, Random.Range(-20, 20));
     }
