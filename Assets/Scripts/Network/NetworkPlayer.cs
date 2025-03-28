@@ -4,6 +4,7 @@ using UnityEngine;
 using Fusion;
 using TMPro;
 using UnityEngine.SceneManagement;
+using Cinemachine;
 
 public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 {
@@ -11,6 +12,16 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
     public static NetworkPlayer Local { get; set; } // 入力権限があるプレイヤーはローカル
 
     public Transform playerModel; // レイヤーを変えるのにtransformにアクセスする必要がある
+
+    //public CinemachineVirtualCamera virtualcamera;
+
+
+
+
+
+    // Camera mode 
+
+
 
     // Start is called before the first frame update
     void Start()

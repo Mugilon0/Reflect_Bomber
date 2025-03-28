@@ -7,6 +7,8 @@ public struct NetworkInputData : INetworkInput //@ƒvƒŒƒCƒ„[‚Ì“ü—Í‚ğƒlƒbƒgƒ[ƒ
 {
     // float‚È‚Ç‚ÍÅ“K‚Å‚Í‚È‚¢
     public Vector2 movementInput; // x z
-    public float rotationInput;
+    public Vector3 aimForwardVector;
     //public NetworkBool isJumpPressed; // ¡‰ñ‚Íg‚í‚È‚¢
+
+
 }
