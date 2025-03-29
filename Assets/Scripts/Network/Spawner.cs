@@ -35,13 +35,13 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
         else Debug.Log("OnPlayerJoined");
     }
 
-    public void OnInput(NetworkRunner runner, NetworkInput input) {  
+    public void OnInput(NetworkRunner runner, NetworkInput input) {  // 入力された値を受け取り、実際の動作を実装する
         if (characterInputHandler == null && NetworkPlayer.Local != null) // ローカルの入力にアクセスできるようにする
             characterInputHandler = NetworkPlayer.Local.GetComponent<CharacterInputHandler>();
 
         if (characterInputHandler != null)
         {
-            input.Set(characterInputHandler.GetNetworkInput());
+            input.Set(characterInputHandler.GetNetworkInput()); // 入力を設定、動くようになる
         }
     }
 

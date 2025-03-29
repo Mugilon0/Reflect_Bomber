@@ -22,6 +22,15 @@ public class CharacterMovementHandler : NetworkBehaviour
 
     }
 
+    //private void Update()　
+    //{
+    //    cameraRotationX += viewInput.y * Time.deltaTime * networkCharacterControllerPrototypeCustom.viewUpDownRotationSpeed; // マウスの上下によりカメラの向きをかえる
+    //    cameraRotationX = Mathf.Clamp(cameraRotationX, -90, 90); // あまり遠くまでいかないように
+
+    //    localCamera.transform.localRotation = Quaternion.Euler(cameraRotationX, 0, 0); //　カメラに適用
+    //}
+
+
 
 
     // Update is called once per frame
@@ -30,9 +39,10 @@ public class CharacterMovementHandler : NetworkBehaviour
         if (GetInput(out NetworkInputData networkInputData)) //　Get the input from the network
         {
             // Rotate the input from the network
-            transform.forward = networkInputData.aimForwardVector; // たいだな方法
+            transform.forward = networkInputData.aimForwardVector; // たいだな方法 急に向きがかわると変になるかも
 
-            // Cancel out rotation on X axis as we dont want our character to tilt
+
+            // Cancel out rotation on X axis as we dont want our character to tilt 上下に向いたとき傾かないようにする
             Quaternion rotation = transform.rotation;
             rotation.eulerAngles = new Vector3(0, rotation.eulerAngles.y, rotation.eulerAngles.z);
             transform.rotation = rotation;
@@ -55,18 +65,9 @@ public class CharacterMovementHandler : NetworkBehaviour
     {
         if (transform.position.y < -12)
         {
-            transform.transform.position = Utils.GetRandomSpawnPoint();
+            transform.position = Utils.GetRandomSpawnPoint();
         }
     }
 
-    
-
-
-
-
-    //public void SetViewInputVector(Vector2 viewInput) //視点の向きを受け取り、実行する
-    //{
-    //    this.viewInput = viewInput;
-    //}
 
 }

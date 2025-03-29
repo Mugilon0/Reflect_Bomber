@@ -14,6 +14,7 @@ public class NetworkCharacterControllerPrototypeCustom : NetworkTransform {
   public float braking       = 10.0f;
   public float maxSpeed      = 2.0f;
   public float rotationSpeed = 15.0f;
+  public float viewUpDownRotationSpeed = 50.0f ; // 上下を見る速度
 
   [Networked]
   [HideInInspector]
@@ -45,7 +46,10 @@ public class NetworkCharacterControllerPrototypeCustom : NetworkTransform {
   public override void Spawned() {
     base.Spawned();
     CacheController();
-  }
+
+        // Caveat: this is needed to initialize the Controller's state and avoid unwanted spikes in its perceived velocity
+    Controller.Move(transform.position);
+    }
 
   private void CacheController() {
     if (Controller == null) {
@@ -104,7 +108,7 @@ public class NetworkCharacterControllerPrototypeCustom : NetworkTransform {
       horizontalVel = Vector3.Lerp(horizontalVel, default, braking * deltaTime);
     } else {
       horizontalVel      = Vector3.ClampMagnitude(horizontalVel + direction * acceleration * deltaTime, maxSpeed);
-      transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction), rotationSpeed * Runner.DeltaTime); // キャラの向きをカメラの向きに合わせる
+      //transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction), rotationSpeed * Runner.DeltaTime); // キャラの向きをカメラの向きに合わせる
     }
 
     moveVelocity.x = horizontalVel.x;
@@ -115,4 +119,9 @@ public class NetworkCharacterControllerPrototypeCustom : NetworkTransform {
     Velocity   = (transform.position - previousPos) * Runner.Simulation.Config.TickRate;
     IsGrounded = Controller.isGrounded;
   }
+
+    public void Rotate(float rotationY)
+    {
+        transform.Rotate(0, rotationY * Runner.DeltaTime * rotationSpeed, 0);
+    }
 }

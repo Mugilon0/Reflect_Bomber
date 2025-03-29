@@ -13,7 +13,7 @@ public class LocalCameraHandler : MonoBehaviour
     Vector2 viewInput;
 
     //Rotation
-    //float cameraRotationX = 0;
+    float cameraRotationX = 0;
     float cameraRotationY = 0;
 
     // other componets
@@ -46,15 +46,16 @@ public class LocalCameraHandler : MonoBehaviour
 
 
         // Calculate rotation
-        //cameraRotataionX += viewInput.y * Time.deltaTime * NetworkCharacterControllerPrototypeCustom.viewUpDownRotationSpeed;
-        //cameraRotationX = Mathf.Clamp(cameraRotationX, -90, 90);
+        cameraRotationX += viewInput.y * Time.deltaTime * networkCharacterControllerPrototypeCustom.viewUpDownRotationSpeed;
+        cameraRotationX = Mathf.Clamp(cameraRotationX, -90, 90);
 
+        cameraRotationY += viewInput.x * Time.deltaTime * networkCharacterControllerPrototypeCustom.rotationSpeed;
         //cameraRotationY += SetViewInputVector().x * Time.deltaTime * NetworkCharacterControllerPrototypeCustom.rotationSpeed;
 
         //// Apply rotation
-        //localCamera.transform.rotation = Quaternion.Euler(cameraRotationX, cameraRotationY, 0);
+        localCamera.transform.rotation = Quaternion.Euler(cameraRotationX, cameraRotationY, 0);
 
-        localCamera.transform.rotation = cameraAnchorPoint.rotation; // 自作
+        //localCamera.transform.rotation = cameraAnchorPoint.rotation; // 自作
     }
 
     // マウスによる視線移動は実施しないが　回転
