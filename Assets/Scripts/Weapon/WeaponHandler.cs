@@ -38,7 +38,7 @@ public class WeaponHandler : NetworkBehaviour
     {
         if (grenadeFireDelay.ExpiredOrNotRunning(Runner))
         {
-            string fakeNickname = "Guest"; // 後でちゃんとニックネームとれるようにする！！！！！！！！！！！！！
+            string fakeNickname = "Guest"; // 後でちゃんとニックネームとれるようにするそして消す！！！！！！！！！！！！！
             Runner.Spawn(grenadePrefab, aimPoint.position + aimForwardVector * 1.5f, Quaternion.LookRotation(aimForwardVector), Object.InputAuthority, (runner, spawnedGrenade) =>
             {
                 spawnedGrenade.GetComponent<GrenadeHandler>().Throw(aimForwardVector * 15, Object.InputAuthority, fakeNickname.ToString());

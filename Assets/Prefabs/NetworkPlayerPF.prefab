@@ -46,6 +46,7 @@ GameObject:
   - component: {fileID: 5473587729521293653}
   - component: {fileID: 2895380423898719993}
   - component: {fileID: 6888901818282590873}
+  - component: {fileID: 6660424892885233502}
   m_Layer: 0
   m_Name: NetworkPlayerPF
   m_TagString: Untagged
@@ -136,6 +137,7 @@ MonoBehaviour:
   - {fileID: 2696933735653848454}
   - {fileID: 5473587729521293653}
   - {fileID: 2895380423898719993}
+  - {fileID: 6660424892885233502}
   SimulationBehaviours: []
 --- !u!114 &5473587729521293653
 MonoBehaviour:
@@ -203,6 +205,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb2cd2696d752ac40b52d3864111606f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &6660424892885233502
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3928409143606774320}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18d3c45b14dd6b8428c3e4edbc0a67c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  WordOffset: 0
+  WordCount: 0
+  _interpolationDataSource: 0
+  grenadePrefab: {fileID: 3899878757973463630, guid: bec49898b00d4b54a92e124d25d675fa,
+    type: 3}
+  aimPoint: {fileID: 6065549994345330787}
+  collisionLayers:
+    serializedVersion: 2
+    m_Bits: 0
 --- !u!1 &4963339277943583283
 GameObject:
   m_ObjectHideFlags: 0
