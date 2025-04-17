@@ -10,5 +10,5 @@ public struct NetworkInputData : INetworkInput //@ƒvƒŒƒCƒ„[‚Ì“ü—Í‚ğƒlƒbƒgƒ[ƒ
     public Vector3 aimForwardVector;
     //public NetworkBool isJumpPressed; // ¡‰ñ‚Íg‚í‚È‚¢
 
-
+    public NetworkBool isGrenadeFireButtonPressed;
 }

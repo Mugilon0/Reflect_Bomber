@@ -15,12 +15,13 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 
     //public CinemachineVirtualCamera virtualcamera;
 
-
+    //[Networked(OnChanged = nameof(OnNickNameChanged))]  // ←ちゃんと実装しなければ有効にします！！！！！！！！！
+    public NetworkString<_16> nickName { get; set; }
 
 
 
     // Camera mode 
-
+    public bool is3rdPersonCamera { get; set; }
 
 
     // Start is called before the first frame update

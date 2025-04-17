@@ -7,6 +7,7 @@ public class LocalCameraHandler : MonoBehaviour
 {
     //public CinemachineVirtualCamera cinemachineVirtualCamera;
     public Transform cameraAnchorPoint;
+    Camera localCamera;
 
 
     // Input
@@ -18,7 +19,8 @@ public class LocalCameraHandler : MonoBehaviour
 
     // other componets
     NetworkCharacterControllerPrototypeCustom networkCharacterControllerPrototypeCustom;
-    Camera localCamera;
+    CinemachineVirtualCamera cinemachineVirtualCamera;
+
     private void Awake()
     {
         localCamera = GetComponent<Camera>();
@@ -40,6 +42,42 @@ public class LocalCameraHandler : MonoBehaviour
             return;
         if (!localCamera.enabled) // ローカルで有効でないなら更新する意味ない
             return;
+
+        //　Cinemachineがあるか確認
+        if (cinemachineVirtualCamera == null)
+            cinemachineVirtualCamera = FindObjectOfType<CinemachineVirtualCamera>();
+        else
+        {
+            if (NetworkPlayer.Local.is3rdPersonCamera)
+            {
+                if (!cinemachineVirtualCamera.enabled)
+                {
+                    cinemachineVirtualCamera.Follow = NetworkPlayer.Local.playerModel;
+                    cinemachineVirtualCamera.LookAt = NetworkPlayer.Local.playerModel;
+                    cinemachineVirtualCamera.enabled = true;
+
+                    // Set the layer of the local players model
+                    Utils.SetRenderLayerInChildren(NetworkPlayer.Local.playerModel, LayerMask.NameToLayer("Default"));
+
+                }
+
+                // Let the camera be handled by cinemachine
+                return;
+            }
+            else
+            {
+                // カメラの切り替え
+                if (cinemachineVirtualCamera.enabled)
+
+                    // Sets the layer of the local players model
+                    Utils.SetRenderLayerInChildren(NetworkPlayer.Local.playerModel, LayerMask.NameToLayer("LocalPlayerModel"));
+
+                    cinemachineVirtualCamera.enabled = false;
+            }
+        }
+
+
+
 
         // Move the camera to the position of the player
         localCamera.transform.position = cameraAnchorPoint.position; // カメラがプレイヤーと同じ位置に 
