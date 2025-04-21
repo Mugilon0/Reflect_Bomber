@@ -11,6 +11,8 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 
     public static NetworkPlayer Local { get; set; } // 入力権限があるプレイヤーはローカル
 
+    public static Dictionary<PlayerRef, NetworkPlayer> ActivePlayers = new Dictionary<PlayerRef, NetworkPlayer>();
+
     public Transform playerModel; // レイヤーを変えるのにtransformにアクセスする必要がある
 
     //public CinemachineVirtualCamera virtualcamera;
@@ -57,6 +59,9 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 
             Debug.Log("Spawned remote player"); //そうでないならリモートプレイヤー
         }
+
+        // プレイヤーの右側を定義するため 4/17
+        ActivePlayers[Object.InputAuthority] = this;
 
         // Make it easier to tell which player is which
         transform.name = $"P_{Object.Id}"; // 生成されるプレイヤーの名前を変更

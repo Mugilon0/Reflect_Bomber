@@ -26,6 +26,10 @@ public class GrenadeHandler : NetworkBehaviour
 
         networkRigidbody.Rigidbody.AddForce(throwForce, ForceMode.Impulse);
 
+        //@’e‚É‰ñ“]‚ğ‰Á‚¦‚é 4/18
+        Vector3 frontFlip = transform.right * 10f; // ‘O“]“I‚È‰ñ“]
+        networkRigidbody.Rigidbody.angularVelocity = frontFlip;
+
         this.thrownByPlayerRef = thrownByPlayerRef;
         this.thrownByPlayerName = thrownByPlayerName;
 
