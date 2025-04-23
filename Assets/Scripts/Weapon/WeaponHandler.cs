@@ -60,7 +60,7 @@ public class WeaponHandler : NetworkBehaviour
 
 
     // Timing 
-    TickTimer grenadeFireDelay = TickTimer.None;  //アイテムボックスないので仮の実装
+    TickTimer grenadeFireDelay = TickTimer.None;  //アイテムボックスないので0から弾を生成できるように実装
 
     void FireGrenade(Vector3 aimForwardVector)
     {

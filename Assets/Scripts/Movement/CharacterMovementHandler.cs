@@ -39,7 +39,7 @@ public class CharacterMovementHandler : NetworkBehaviour
     // Update is called once per frame
     public override void FixedUpdateNetwork()
     {
-        if (Object.HasInputAuthority)
+        if (Object.HasStateAuthority)
         {
             if (isRespawnRequested)
             {
@@ -82,7 +82,7 @@ public class CharacterMovementHandler : NetworkBehaviour
     {
         if (transform.position.y < -12)
         {
-            if (Object.HasInputAuthority)
+            if (Object.HasStateAuthority)
             {
                 Debug.Log($"{Time.time} Respawn due to fall outside of map at position {transform.position}");
 

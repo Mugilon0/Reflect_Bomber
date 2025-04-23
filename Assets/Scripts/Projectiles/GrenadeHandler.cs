@@ -67,7 +67,7 @@ public class GrenadeHandler : NetworkBehaviour
             return;
         }
 
-        // Check if the rocket has hit anything
+        // ボムに当たったかどうか判定 　Check if the rocket has hit anything
         int hitCount = Runner.LagCompensation.OverlapSphere(checkForImpackPoint.position, 0.5f, thrownByPlayerRef, hits, collisionLayers, HitOptions.IncludePhysX); // 近くに剛体がないかチェック
 
         bool isValidHit = false;
@@ -87,11 +87,13 @@ public class GrenadeHandler : NetworkBehaviour
         }
 
         if (isValidHit)
-        {
-            hitCount = Runner.LagCompensation.OverlapSphere(checkForImpackPoint.position, 4, thrownByPlayerRef, hits, collisionLayers, HitOptions.None);
+        { 
+            // 爆発パーティクルの当たり判定
+            hitCount = Runner.LagCompensation.OverlapSphere(checkForImpackPoint.position, 8, thrownByPlayerRef, hits, collisionLayers, HitOptions.None);
 
             for (int i = 0; i < hitCount; i++)
             {
+                // 範囲にいるすべてのHPHandlerに対して実行
                 HPHandler hpHandler = hits[i].Hitbox.transform.root.GetComponent<HPHandler>();
 
                 if (hpHandler != null)
