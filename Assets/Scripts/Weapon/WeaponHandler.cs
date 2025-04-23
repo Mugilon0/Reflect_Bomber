@@ -17,6 +17,10 @@ public class WeaponHandler : NetworkBehaviour
     [Header("Collision")]
     public LayerMask collisionLayers;
 
+    //[Networked(OnChanged =nameof(OnFireChanged))]
+    //public bool isFireing { get; set; }
+
+
 
     //í«â¡ 4/17
     [Header("throwAngle")]
@@ -24,16 +28,35 @@ public class WeaponHandler : NetworkBehaviour
 
     [Header("throwPower")]
     public float throwPower = 15f;
-    
+
+    // other components
+    HPHandler hpHandler;
+
+    NetworkPlayer networkPlayer;
+    NetworkObject networkObject;
+
+    private void Awake()
+    {
+        hpHandler = GetComponent<HPHandler>();
+        // add 4/23
+        networkPlayer = GetBehaviour<NetworkPlayer>();
+        networkObject = GetComponent<NetworkObject>();
+    }
+
 
     public override void FixedUpdateNetwork()
     {
+        if (hpHandler.isDead)
+            return;
+
+        // Get the input from the network
         if (GetInput(out NetworkInputData networkInputData))
         {
             if (networkInputData.isGrenadeFireButtonPressed)
                 FireGrenade(networkInputData.aimForwardVector);
         }
     }
+
 
 
     // Timing 
@@ -63,7 +86,7 @@ public class WeaponHandler : NetworkBehaviour
 
             Runner.Spawn(grenadePrefab, aimPoint.position + aimForwardVector * 1.5f, Quaternion.LookRotation(aimForwardVector), Object.InputAuthority, (runner, spawnedGrenade) =>
             {
-                spawnedGrenade.GetComponent<GrenadeHandler>().Throw(throwForce, Object.InputAuthority, fakeNickname.ToString()); // aimForwardVector * 15 Å® throwForce
+                spawnedGrenade.GetComponent<GrenadeHandler>().Throw(throwForce, Object.InputAuthority,networkObject, fakeNickname.ToString()); // aimForwardVector * 15 Å® throwForce      networkObject added 4/23
             });
 
 

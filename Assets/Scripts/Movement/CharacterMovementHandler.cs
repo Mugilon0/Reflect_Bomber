@@ -6,14 +6,17 @@ using UnityEngine.SceneManagement;
 
 public class CharacterMovementHandler : NetworkBehaviour
 {
+    bool isRespawnRequested = false;
 
     //other components
     NetworkCharacterControllerPrototypeCustom networkCharacterControllerPrototypeCustom;
+    HPHandler hpHandler;
     //Camera localCamera; // マウスでカメラ動かさないならまだ不要
 
     private void Awake()
     {
         networkCharacterControllerPrototypeCustom = GetComponent<NetworkCharacterControllerPrototypeCustom>();
+        hpHandler = GetComponent<HPHandler>();
         //localCamera = GetComponentInChildren<Camera>(); // まだ不要
     }
     // Start is called before the first frame update
@@ -36,6 +39,20 @@ public class CharacterMovementHandler : NetworkBehaviour
     // Update is called once per frame
     public override void FixedUpdateNetwork()
     {
+        if (Object.HasInputAuthority)
+        {
+            if (isRespawnRequested)
+            {
+                Respawn();
+                return;
+            }
+
+            // Don't update the clients position when they are dead
+            if (hpHandler.isDead)
+                return;
+
+        }
+
         if (GetInput(out NetworkInputData networkInputData)) //　Get the input from the network
         {
             // Rotate the input from the network
@@ -65,9 +82,35 @@ public class CharacterMovementHandler : NetworkBehaviour
     {
         if (transform.position.y < -12)
         {
+            if (Object.HasInputAuthority)
+            {
+                Debug.Log($"{Time.time} Respawn due to fall outside of map at position {transform.position}");
+
+                Respawn();
+            }
+
+
             transform.position = Utils.GetRandomSpawnPoint();
         }
     }
 
+    public void RequestRespawn()
+    {
+        isRespawnRequested = true; // リスポーン時にトリガーする
+    }
 
+    void Respawn()
+    {
+        networkCharacterControllerPrototypeCustom.TeleportToPosition(Utils.GetRandomSpawnPoint()); // transform.positionをかえるよりok
+
+        hpHandler.OnRespawned();
+
+        isRespawnRequested = false;
+    }
+
+    // プレイヤー内のヒットボックスにもぶつからないようにするため
+    public void SetCharacterControllerEnabled(bool isEnabled)
+    {
+        networkCharacterControllerPrototypeCustom.Controller.enabled = isEnabled;
+    }
 }

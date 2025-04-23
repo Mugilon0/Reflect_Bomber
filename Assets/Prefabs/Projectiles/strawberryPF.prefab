@@ -157,6 +157,10 @@ MonoBehaviour:
   _interpolationDataSource: 0
   explosionParticleSystemPrefab: {fileID: 1758473627833946668, guid: 9b21333b068a5084ba09535839bee3c8,
     type: 3}
+  checkForImpackPoint: {fileID: 4539498406255825403}
+  collisionLayers:
+    serializedVersion: 2
+    m_Bits: 128
 --- !u!1001 &4140269045270836752
 PrefabInstance:
   m_ObjectHideFlags: 0

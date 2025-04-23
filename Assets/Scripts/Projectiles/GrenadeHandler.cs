@@ -2,14 +2,24 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Fusion;
+using Unity.VisualScripting;
 
 public class GrenadeHandler : NetworkBehaviour
 {
+    [Header("Prefabs")]
     public GameObject explosionParticleSystemPrefab;
+
+    [Header("Collision detection")]
+    public Transform checkForImpackPoint;
+    public LayerMask collisionLayers; //当たり判定用
+
+    List<LagCompensatedHit> hits = new List<LagCompensatedHit>();
 
     // Thrown by info
     PlayerRef thrownByPlayerRef;
     string thrownByPlayerName;
+
+    NetworkObject thrownByNetworkObject; // 当たり判定? いらないかも
 
     // Timing
     TickTimer explodeTickTimer = TickTimer.None;
@@ -18,7 +28,9 @@ public class GrenadeHandler : NetworkBehaviour
     NetworkObject networkObject;
     NetworkRigidbody networkRigidbody;
 
-    public void Throw(Vector3 throwForce, PlayerRef thrownByPlayerRef, string thrownByPlayerName)
+
+
+    public void Throw(Vector3 throwForce, PlayerRef thrownByPlayerRef, NetworkObject thrownByNetworkObject,  string thrownByPlayerName)
     {
         networkObject = GetComponent<NetworkObject>();
         networkRigidbody = GetComponent<NetworkRigidbody>();
@@ -32,6 +44,8 @@ public class GrenadeHandler : NetworkBehaviour
 
         this.thrownByPlayerRef = thrownByPlayerRef;
         this.thrownByPlayerName = thrownByPlayerName;
+        this.thrownByNetworkObject = thrownByNetworkObject;
+
 
         explodeTickTimer = TickTimer.CreateFromSeconds(Runner, 4);
     }
@@ -40,13 +54,53 @@ public class GrenadeHandler : NetworkBehaviour
 
     public override void FixedUpdateNetwork()
     {
+        //if (Object.HasInputAuthority) {}
+
         if (explodeTickTimer.Expired(Runner)) // タイマーが期限切れになったら実行される
         {
+
             Runner.Despawn(networkObject);
+
 
             // stop the explode timer from being triggered again
             explodeTickTimer = TickTimer.None;
+            return;
         }
+
+        // Check if the rocket has hit anything
+        int hitCount = Runner.LagCompensation.OverlapSphere(checkForImpackPoint.position, 0.5f, thrownByPlayerRef, hits, collisionLayers, HitOptions.IncludePhysX); // 近くに剛体がないかチェック
+
+        bool isValidHit = false;
+
+        if (hitCount > 0)
+            isValidHit = true;
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            // check if we have hit a Hitbox
+            if (hits[i].Hitbox != null)
+            {
+                // check that we didn't fire the rocket and hit ourselves. this can happen if the lag is a big high
+                if (hits[i].Hitbox.Root.GetBehaviour<NetworkObject>() == thrownByNetworkObject) // 自分にヒットした場合
+                    isValidHit = false;
+            }
+        }
+
+        if (isValidHit)
+        {
+            hitCount = Runner.LagCompensation.OverlapSphere(checkForImpackPoint.position, 4, thrownByPlayerRef, hits, collisionLayers, HitOptions.None);
+
+            for (int i = 0; i < hitCount; i++)
+            {
+                HPHandler hpHandler = hits[i].Hitbox.transform.root.GetComponent<HPHandler>();
+
+                if (hpHandler != null)
+                    hpHandler.OnTakeDamage(thrownByPlayerName, 1);
+            }
+
+            Runner.Despawn(networkObject);
+        }
+
     }
 
     public override void Despawned(NetworkRunner runner, bool hasState)
@@ -57,5 +111,9 @@ public class GrenadeHandler : NetworkBehaviour
 
     }
 
+    //public override void Despawned(NetworkRunner runner, bool hasState)
+    //{
+    //    Instantiate(explosionParticleSystemPrefab,checkForImpactPoint.position, Quaternion.identity);
+    //}
 
 }
