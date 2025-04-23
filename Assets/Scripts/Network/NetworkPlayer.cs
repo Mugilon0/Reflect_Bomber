@@ -8,7 +8,7 @@ using Cinemachine;
 
 public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 {
-
+    public TextMeshProUGUI playerNickNameTM;
     public static NetworkPlayer Local { get; set; } // 入力権限があるプレイヤーはローカル
 
     public static Dictionary<PlayerRef, NetworkPlayer> ActivePlayers = new Dictionary<PlayerRef, NetworkPlayer>();
@@ -17,8 +17,8 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 
     //public CinemachineVirtualCamera virtualcamera;
 
-    //[Networked(OnChanged = nameof(OnNickNameChanged))]  // ←ちゃんと実装しなければ有効にします！！！！！！！！！
-    public NetworkString<_16> nickName { get; set; }
+    [Networked(OnChanged = nameof(OnNickNameChanged))]  // ←ちゃんと実装しなければ有効にします！！！！！！！！！
+    public NetworkString<_16> nickName { get; set; } // 最大サイズ16
 
 
 
@@ -43,6 +43,8 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 
             // Disable main camera
             Camera.main.gameObject.SetActive(false); //ローカルカメラを使用するときはメインカメラは無効にする
+
+            RPC_SetNickName(PlayerPrefs.GetString("PlayerNickName")); // rpcを送信する
 
             Debug.Log("Spawned local player");
         }
@@ -72,4 +74,27 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
         if (player == Object.InputAuthority)
             Runner.Despawn(Object);
     }
+
+    static void OnNickNameChanged(Changed<NetworkPlayer> changed) // 呼び出されるのはこっち
+    {
+        Debug.Log($"{Time.time} OnHPChanged value {changed.Behaviour.nickName}");
+
+        changed.Behaviour.OnNickNameChanged();
+    }
+
+
+    private void OnNickNameChanged()
+    {
+        Debug.Log($"Nickname changed for player to {nickName} for player {gameObject.name}");
+
+        playerNickNameTM.text = nickName.ToString();
+    }
+
+    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)] //入力者→サーバー rpcを受信する
+    public void RPC_SetNickName(string nickName, RpcInfo info = default)
+    {
+        Debug.Log($"RPC SetNickName { nickName}");
+        this.nickName = nickName;
+    }
+
 }
