@@ -6,22 +6,69 @@ using UnityEngine.SceneManagement;
 
 public class MainMenuUIHandler : MonoBehaviour
 {
-    public TMP_InputField inputField;
+    [Header("Panels")]
+    public GameObject playerDetailsPanel;
+    public GameObject sessionListPanel;
+    public GameObject createRoomPanel;
+    public GameObject statusPanel;
+
+
+    [Header("Player setting")]
+    public TMP_InputField playerNameInputField;
+
+    [Header("New game session")]
+    public TMP_InputField sessionNameInputField;
+
 
     // Start is called before the first frame update
     void Start()
     {
         if (PlayerPrefs.HasKey("PlayerNickname"))
-            inputField.text = PlayerPrefs.GetString("PlayerNickName");
+            playerNameInputField.text = PlayerPrefs.GetString("PlayerNickName");
     }
 
-    public void OnYourNameOkButtonClicked()
+    void HideAllPanels()
+    {
+        playerDetailsPanel.SetActive(false);
+        sessionListPanel.SetActive(false);
+        statusPanel.SetActive(false);
+        createRoomPanel.SetActive(false);
+    }
+
+
+
+    public void OnFindGameClicked()
     {
         // player‚Ìnickname‚ð•Û‘¶
-        PlayerPrefs.SetString("PlayerNickName", inputField.text);
+        PlayerPrefs.SetString("PlayerNickName", playerNameInputField.text);
         PlayerPrefs.Save();
 
-        SceneManager.LoadScene("World1");
+        GameManager.instance.playerNickName = playerNameInputField.text;
+
+        NetworkRunnerHandler networkRunnerHandler = FindObjectOfType<NetworkRunnerHandler>();
+
+        networkRunnerHandler.OnJoinLobby();
+
+        HideAllPanels();
+
+        sessionListPanel.gameObject.SetActive(true);
     }
 
+    public void OnCreateNewGameClicked()
+    {
+        HideAllPanels();
+
+        createRoomPanel.SetActive(true);
+    }
+
+    public void OnStartNewSessionClicked()
+    {
+        NetworkRunnerHandler networkRunnerHandler = FindObjectOfType<NetworkRunnerHandler>();
+
+        networkRunnerHandler.CreateGame(sessionNameInputField.text, "World1");
+
+        HideAllPanels();
+
+        statusPanel.gameObject.SetActive(true);
+    }
 }

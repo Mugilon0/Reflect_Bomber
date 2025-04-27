@@ -28,7 +28,7 @@ public class HPHandler : NetworkBehaviour
     public GameObject playerModel;
     public GameObject deathGameObjectPrefab;
 
-    //    public bool skipSettingStartValues = false;
+    public bool skipSettingStartValues = false;
 
     //    //Other components
     HitboxRoot hitboxRoot;
@@ -47,8 +47,12 @@ public class HPHandler : NetworkBehaviour
     //    // Start is called before the first frame update
     void Start()
     {
-        HP = startingHP;
-        isDead = false;
+        if (!skipSettingStartValues)
+        {
+            HP = startingHP;
+            isDead = false;
+        }
+
 
         defaultMeshBodyColor = bodyMeshRenderer.material.color;
 

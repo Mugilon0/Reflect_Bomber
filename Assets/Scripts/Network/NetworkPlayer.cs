@@ -5,6 +5,7 @@ using Fusion;
 using TMPro;
 using UnityEngine.SceneManagement;
 using Cinemachine;
+using System;
 
 public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 {
@@ -20,7 +21,10 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
     [Networked(OnChanged = nameof(OnNickNameChanged))]  // ←ちゃんと実装しなければ有効にします！！！！！！！！！
     public NetworkString<_16> nickName { get; set; } // 最大サイズ16
 
+    // Remote Client Token Hash
+    [Networked] public int token { get; set; }
 
+    public LocalCameraHandler localCameraHandler;
 
     // Camera mode 
     public bool is3rdPersonCamera { get; set; }
@@ -42,17 +46,34 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
             Utils.SetRenderLayerInChildren(playerModel, LayerMask.NameToLayer("LocalPlayerModel")); //　レイヤーを設定　目はレンダリングされなくなる
 
             // Disable main camera
-            Camera.main.gameObject.SetActive(false); //ローカルカメラを使用するときはメインカメラは無効にする
+            if (Camera.main != null)
+                Camera.main.gameObject.SetActive(false); //ローカルカメラを使用するときはメインカメラは無効にする
 
-            RPC_SetNickName(PlayerPrefs.GetString("PlayerNickName")); // rpcを送信する
+            //Enabled 1 audio listner
+            AudioListener audioListner = GetComponentInChildren<AudioListener>(true);
+            audioListner.enabled = true;
+
+
+            // Enabled the local camera
+            localCameraHandler.localCamera.enabled = true;
+
+            // Detach camera if enabled
+            localCameraHandler.transform.parent = null;
+
+            //localUI.SetActive(true);  // 4/26 ep5 45:37
+
+
+            RPC_SetNickName(GameManager.instance.playerNickName); // rpcを送信する
 
             Debug.Log("Spawned local player");
         }
         else
         {
-            // Disable the camera if we are not the local player
-            Camera localCamera = GetComponentInChildren<Camera>(); // ローカルカメラにアクセスし、子でカメラを取得
-            localCamera.enabled = false; // 5.11 // リモートプレイヤーでは無効にする
+
+            // Enabled the local camera
+            localCameraHandler.localCamera.enabled = false;
+
+            //localUI.SetActive(false); //UIもけす
 
             // Only 1 audio listener is allowed in the scene so disable remote players audio listener 
             AudioListener audioListener = GetComponentInChildren<AudioListener>();  // 音についても上と同様
@@ -71,6 +92,13 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 
     public void PlayerLeft(PlayerRef player) // プレイヤーが離れるときの処理
     {
+        //if (Object.HasStateAuthority)
+        //{
+        //    if (Runner.TryGetPlayerObject(player, out NetworkObject playerLeftNetworkObject))
+        //        Local.GetComponent<NetworkInGameMessages>().SendInGameRPCMessage(playerLeftNetworkObject.GetComponent<NetworkPlayer>().nickName.ToString(), "left");
+        //}  //  メッセージUIはないので省略
+
+
         if (player == Object.InputAuthority)
             Runner.Despawn(Object);
     }
@@ -95,6 +123,13 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
     {
         Debug.Log($"RPC SetNickName { nickName}");
         this.nickName = nickName;
+    }
+
+    void OnDestroy()            // カメラのep進めたら実装してもよい　これがないとhostmisration無理
+    {
+        // Get rid of the local camera if we get destroyed as a new one will be spawned with the new Network player
+        if (localCameraHandler != null)
+            Destroy(localCameraHandler.gameObject);
     }
 
 }

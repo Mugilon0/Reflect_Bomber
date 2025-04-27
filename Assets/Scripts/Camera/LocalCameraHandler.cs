@@ -7,7 +7,7 @@ public class LocalCameraHandler : MonoBehaviour
 {
     //public CinemachineVirtualCamera cinemachineVirtualCamera;
     public Transform cameraAnchorPoint;
-    Camera localCamera;
+    public Camera localCamera;
 
 
     // Input
@@ -30,9 +30,12 @@ public class LocalCameraHandler : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        //Detach camera if enabled ローカルのカメラのみが有効
-        if (localCamera.enabled)
-            localCamera.transform.parent = null; // カメラがcharactermovementhandlerから切り離される キャラの動きによって更新されないようにする
+        cameraRotationX = GameManager.instance.cameraViewRotation.x;
+        cameraRotationY = GameManager.instance.cameraViewRotation.y;
+
+        ////Detach camera if enabled ローカルのカメラのみが有効
+        //if (localCamera.enabled)
+        //    localCamera.transform.parent = null; // カメラがcharactermovementhandlerから切り離される キャラの動きによって更新されないようにする
     }
 
     // Update is called once per frame
@@ -100,5 +103,15 @@ public class LocalCameraHandler : MonoBehaviour
     public void SetViewInputVector(Vector2 viewInput)
     {
         this.viewInput = viewInput;
+    }
+
+    private void OnDestroy()
+    {           
+        // xはいれていない
+        if (cameraRotationY != 0)
+        {
+
+            GameManager.instance.cameraViewRotation.y = cameraRotationY;
+        }
     }
 }

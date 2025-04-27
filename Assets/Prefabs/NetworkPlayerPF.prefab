@@ -222,6 +222,8 @@ MonoBehaviour:
     _length: 0
     _data:
       Data: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+  _token: 0
+  localCameraHandler: {fileID: 8607498525518194962}
 --- !u!114 &2991982307272973300
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -360,6 +362,7 @@ MonoBehaviour:
   playerModel: {fileID: 4963339277943583283}
   deathGameObjectPrefab: {fileID: 8500920156052182585, guid: 830e92a3f95c4b04caf8edd648aed9bd,
     type: 3}
+  skipSettingStartValues: 0
 --- !u!114 &6786419644906034968
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -859,6 +862,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cameraAnchorPoint: {fileID: 6065549994345330787}
+  localCamera: {fileID: 0}
 --- !u!114 &1499390019018418652
 MonoBehaviour:
   m_ObjectHideFlags: 0
