@@ -12,6 +12,12 @@ public class SessionListUIHandler : MonoBehaviour
     public GameObject sessionItemListPrefab;
     public VerticalLayoutGroup verticalLayoutGroup;
 
+    private void Awake()
+    {
+        ClearList();
+    }
+
+
     public void ClearList()
     {
         // Delete all children of the vertical layout group
@@ -36,14 +42,21 @@ public class SessionListUIHandler : MonoBehaviour
 
     }
 
-    private void AddedSessionInfoListUIItem_OnJoinSession(SessionInfo obj)
+    private void AddedSessionInfoListUIItem_OnJoinSession(SessionInfo sessionInfo)
     {
+        NetworkRunnerHandler networkRunnerHandler = FindObjectOfType<NetworkRunnerHandler>();
 
+        networkRunnerHandler.JoinGame(sessionInfo);
+
+        MainMenuUIHandler mainMenuUIHandler = FindObjectOfType<MainMenuUIHandler>();
+        mainMenuUIHandler.OnJoinServer();
     }
 
     // セッションを探したがみつからなかった際のメソッド1
     public void OnNoSessionFound()
     {
+        ClearList();
+
         statusText.text = "No game room found";
         statusText.gameObject.SetActive(true);
     }
@@ -51,6 +64,8 @@ public class SessionListUIHandler : MonoBehaviour
     // セッションを探している間
     public void OnLookingForGameSeession()
     {
+        ClearList();
+
         statusText.text = "Looking for game room";
         statusText.gameObject.SetActive(true);
     }

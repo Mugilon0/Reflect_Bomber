@@ -16,13 +16,15 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
     Dictionary<int, NetworkPlayer> mapTokenIDWithNetworkPlayer;
 
     // other components
-    CharacterInputHandler characterInputHandler; 
-
+    CharacterInputHandler characterInputHandler;
+    SessionListUIHandler sessionListUIHandler;
 
     void Awake()
     {
         // create a new Dictionary
         mapTokenIDWithNetworkPlayer = new Dictionary<int, NetworkPlayer>();
+
+        sessionListUIHandler = FindObjectOfType<SessionListUIHandler>(true);
     }
 
     void Start()
@@ -116,7 +118,33 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
     public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) { }
     public void OnConnectFailed(NetworkRunner runner, NetAddress remoteAddress, NetConnectFailedReason reason) { }
     public void OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message) { }
-    public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList) { }
+
+    // 他プレイヤーのロビー情報を受け取る
+    public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList) 
+    {
+        // SessionListUIHandlerが有効な場合のみ
+        if (sessionListUIHandler == null)
+            return;
+        if (sessionList.Count == 0)
+        {
+            Debug.Log("Joined lobby no sessions found");
+
+            sessionListUIHandler.OnNoSessionFound();
+        }
+        else
+        {
+            sessionListUIHandler.ClearList(); //古い情報をクリア
+
+            foreach (SessionInfo sessionInfo in sessionList)
+            {
+                sessionListUIHandler.AddToList(sessionInfo);
+
+                Debug.Log($"Found session {sessionInfo.Name} playerCount {sessionInfo.PlayerCount}");
+            }
+        }
+
+
+    }
     public void OnCustomAuthenticationResponse(NetworkRunner runner, Dictionary<string, object> data) { }
     public async void OnHostMigration(NetworkRunner runner, HostMigrationToken hostMigrationToken) 
     {
