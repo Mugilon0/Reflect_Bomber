@@ -85,7 +85,8 @@ public class NetworkRunnerHandler : MonoBehaviour
             CustomLobbyName = "OurLobbyID", // “Á’è‚ÌƒQ[ƒ€‚ğs‚¢‚½‚¢ê‡‚É—p‚¢‚é
             Initialized = initialized,
             SceneManager = sceneManager,
-            ConnectionToken = connectionToken
+            ConnectionToken = connectionToken,
+            PlayerCount = 4 // added 5/2
         });
 
     }

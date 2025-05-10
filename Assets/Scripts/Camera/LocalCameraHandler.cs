@@ -71,11 +71,13 @@ public class LocalCameraHandler : MonoBehaviour
             {
                 // ƒJƒƒ‰‚ÌØ‚è‘Ö‚¦
                 if (cinemachineVirtualCamera.enabled)
+                {
+                    cinemachineVirtualCamera.enabled = false;
 
                     // Sets the layer of the local players model
                     Utils.SetRenderLayerInChildren(NetworkPlayer.Local.playerModel, LayerMask.NameToLayer("LocalPlayerModel"));
+                }
 
-                    cinemachineVirtualCamera.enabled = false;
             }
         }
 

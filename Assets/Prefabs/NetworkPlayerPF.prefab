@@ -25,7 +25,7 @@ Transform:
   m_GameObject: {fileID: 516387416972978201}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.87}
+  m_LocalPosition: {x: 0, y: 0, z: 0.44}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -340,8 +340,8 @@ MonoBehaviour:
   collisionLayers:
     serializedVersion: 2
     m_Bits: 129
-  throwAngle: 23
-  throwPower: 12
+  throwAngle: 30
+  throwPower: 6.5
 --- !u!114 &1011790096463147331
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -862,7 +862,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cameraAnchorPoint: {fileID: 6065549994345330787}
-  localCamera: {fileID: 0}
+  localCamera: {fileID: 2513414007649489821}
 --- !u!114 &1499390019018418652
 MonoBehaviour:
   m_ObjectHideFlags: 0
