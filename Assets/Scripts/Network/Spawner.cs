@@ -29,7 +29,7 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
 
     void Start()
     {
-        
+
     }
 
     int GetPlayerToken(NetworkRunner runner, PlayerRef player)
@@ -53,7 +53,8 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
         }
     }
 
-    public void OnConnectedToServer(NetworkRunner runner) {
+    public void OnConnectedToServer(NetworkRunner runner)
+    {
         Debug.Log("OnConnectedToServer");
     }
 
@@ -65,7 +66,8 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
 
 
 
-    public void OnPlayerJoined(NetworkRunner runner, PlayerRef player) {
+    public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
+    {
         if (runner.IsServer)
         {
             // Get the token for the player
@@ -92,13 +94,14 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
 
                 // store the mapping between playerToken and the spawned network player
                 mapTokenIDWithNetworkPlayer[playerToken] = spawnedNetworkPlayer;
-                
-            }  
+
+            }
         }
         else Debug.Log("OnPlayerJoined");
     }
 
-    public void OnInput(NetworkRunner runner, NetworkInput input) {  // 入力された値を受け取り、実際の動作を実装する
+    public void OnInput(NetworkRunner runner, NetworkInput input)
+    {  // 入力された値を受け取り、実際の動作を実装する
         if (characterInputHandler == null && NetworkPlayer.Local != null) // ローカルの入力にアクセスできるようにする
             characterInputHandler = NetworkPlayer.Local.GetComponent<CharacterInputHandler>();
 
@@ -120,7 +123,7 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
     public void OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message) { }
 
     // 他プレイヤーのロビー情報を受け取る
-    public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList) 
+    public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList)
     {
         // SessionListUIHandlerが有効な場合のみ
         if (sessionListUIHandler == null)
@@ -146,7 +149,7 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
 
     }
     public void OnCustomAuthenticationResponse(NetworkRunner runner, Dictionary<string, object> data) { }
-    public async void OnHostMigration(NetworkRunner runner, HostMigrationToken hostMigrationToken) 
+    public async void OnHostMigration(NetworkRunner runner, HostMigrationToken hostMigrationToken)
     {
         Debug.Log("OnHostMigration");
 

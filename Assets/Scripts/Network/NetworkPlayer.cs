@@ -21,6 +21,11 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
     [Networked(OnChanged = nameof(OnNickNameChanged))]  // ←ちゃんと実装しなければ有効にします！！！！！！！！！
     public NetworkString<_16> nickName { get; set; } // 最大サイズ16
 
+    [Networked(OnChanged = nameof(OnScoreChanged))]
+    public int score { get; set; } = 0;
+
+    private InGameScoreUIHandler scoreUIHandler;
+
     // Remote Client Token Hash
     [Networked] public int token { get; set; }
 
@@ -86,11 +91,17 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
             Debug.Log("Spawned remote player"); //そうでないならリモートプレイヤー
         }
 
+
+
         // プレイヤーの右側を定義するため 4/17
         ActivePlayers[Object.InputAuthority] = this;
 
         // Make it easier to tell which player is which
         transform.name = $"P_{Object.Id}"; // 生成されるプレイヤーの名前を変更
+
+        scoreUIHandler = FindObjectOfType<InGameScoreUIHandler>();
+        //if (scoreUIHandler != null) // OnNickNameChanged()内で呼び出すので不要になった
+        //    scoreUIHandler.UpdateAllPlayerScores(); // 初期スコアの表示もここでできる
     }
 
     public void PlayerLeft(PlayerRef player) // プレイヤーが離れるときの処理
@@ -119,12 +130,15 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
         Debug.Log($"Nickname changed for player to {nickName} for player {gameObject.name}");
 
         playerNickNameTM.text = nickName.ToString();
+
+        if (scoreUIHandler != null)
+            scoreUIHandler.UpdateAllPlayerScores();
     }
 
     [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)] //入力者→サーバー rpcを受信する
     public void RPC_SetNickName(string nickName, RpcInfo info = default)
     {
-        Debug.Log($"RPC SetNickName { nickName}");
+        Debug.Log($"RPC SetNickName {nickName}");
         this.nickName = nickName;
     }
 
@@ -134,5 +148,32 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
         if (localCameraHandler != null)
             Destroy(localCameraHandler.gameObject);
     }
+
+    static void OnScoreChanged(Changed<NetworkPlayer> changed)
+    {
+        changed.Behaviour.OnScoreChanged();
+    }
+
+    private void OnScoreChanged()
+    {
+        //Debug.Log($"スコアが変更されました: {score}");
+
+        //if (Object.HasInputAuthority)
+        //{
+        //    // ローカルのみがUI更新するようにする
+        //    GameManager.instance.inGameScoreUIHandler.UpdateScoreboard();
+        //}
+        //if (Object.HasInputAuthority)
+        //{
+
+        if (scoreUIHandler != null)
+            scoreUIHandler.UpdateAllPlayerScores();
+        //}
+
+    }
+
+
+
+
 
 }

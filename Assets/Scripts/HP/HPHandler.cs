@@ -12,6 +12,9 @@ public class HPHandler : NetworkBehaviour
     [Networked(OnChanged = nameof(OnStateChanged))]
     public bool isDead { get; set; }
 
+
+
+
     bool isInitialized = false; //このスクリプトが初期化されているかを確認
 
 
@@ -107,8 +110,11 @@ public class HPHandler : NetworkBehaviour
 
 
     //    //Function only called on the server & used by weaponHandler
-    public void OnTakeDamage(string damageCausedByPlayerNickname, byte damageAmount)
+    public void OnTakeDamage(NetworkPlayer damageCausedByPlayerNickname, byte damageAmount)
     {
+        if (!Object.HasStateAuthority)
+            return;
+
         ////Only take damage while alive 死んでたらそれ以上ダメージ受けなくてよい
         if (isDead)
             return;
@@ -119,6 +125,9 @@ public class HPHandler : NetworkBehaviour
 
 
         HP -= damageAmount;
+
+
+        damageCausedByPlayerNickname.score += 1;
         Debug.Log($"{Time.time} {transform.name} took damage got {HP} left");
 
         // Player died
@@ -203,4 +212,8 @@ public class HPHandler : NetworkBehaviour
         HP = startingHP;
         isDead = false;
     }
+
+
+
+
 }

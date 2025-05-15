@@ -30,7 +30,7 @@ public class GrenadeHandler : NetworkBehaviour
 
 
 
-    public void Throw(Vector3 throwForce, PlayerRef thrownByPlayerRef, NetworkObject thrownByNetworkObject,  string thrownByPlayerName)
+    public void Throw(Vector3 throwForce, PlayerRef thrownByPlayerRef, NetworkObject thrownByNetworkObject, string thrownByPlayerName)
     {
         networkObject = GetComponent<NetworkObject>();
         networkRigidbody = GetComponent<NetworkRigidbody>();
@@ -87,9 +87,9 @@ public class GrenadeHandler : NetworkBehaviour
         }
 
         if (isValidHit)
-        { 
+        {
             // 爆発パーティクルの当たり判定
-            hitCount = Runner.LagCompensation.OverlapSphere(checkForImpackPoint.position, 8, thrownByPlayerRef, hits, collisionLayers, HitOptions.None);
+            hitCount = Runner.LagCompensation.OverlapSphere(checkForImpackPoint.position, 2, thrownByPlayerRef, hits, collisionLayers, HitOptions.None);
 
             for (int i = 0; i < hitCount; i++)
             {
@@ -97,7 +97,15 @@ public class GrenadeHandler : NetworkBehaviour
                 HPHandler hpHandler = hits[i].Hitbox.transform.root.GetComponent<HPHandler>();
 
                 if (hpHandler != null)
-                    hpHandler.OnTakeDamage(thrownByPlayerName, 1);
+                {
+                    NetworkPlayer attackerPlayer = thrownByNetworkObject.GetComponent<NetworkPlayer>();
+                    if (attackerPlayer != null)
+                    {
+                        hpHandler.OnTakeDamage(attackerPlayer, 1);
+                    }
+                }
+
+
             }
 
             Runner.Despawn(networkObject);

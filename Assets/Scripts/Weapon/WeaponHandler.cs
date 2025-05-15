@@ -29,6 +29,9 @@ public class WeaponHandler : NetworkBehaviour
     [Header("throwPower")]
     public float throwPower = 15f;
 
+    //[Header("longPressTime")]
+    //public float longPressThreshold = 0.5f;
+
     // other components
     HPHandler hpHandler;
 
@@ -66,7 +69,7 @@ public class WeaponHandler : NetworkBehaviour
     {
         if (grenadeFireDelay.ExpiredOrNotRunning(Runner))
         {
-            string fakeNickname = "Guest"; // 後でちゃんとニックネームとれるようにするそして消す！！！！！！！！！！！！！
+            //string fakeNickname = "Guest"; // 後でちゃんとニックネームとれるようにするそして消す！！！！！！！！！！！！！
 
             Vector3 forwardDirection = aimForwardVector.normalized;
 
@@ -86,7 +89,7 @@ public class WeaponHandler : NetworkBehaviour
 
             Runner.Spawn(grenadePrefab, aimPoint.position + aimForwardVector * 1.5f, Quaternion.LookRotation(aimForwardVector), Object.InputAuthority, (runner, spawnedGrenade) =>
             {
-                spawnedGrenade.GetComponent<GrenadeHandler>().Throw(throwForce, Object.InputAuthority,networkObject, fakeNickname.ToString()); // aimForwardVector * 15 → throwForce      networkObject added 4/23
+                spawnedGrenade.GetComponent<GrenadeHandler>().Throw(throwForce, Object.InputAuthority, networkObject, networkPlayer.nickName.ToString()); // aimForwardVector * 15 → throwForce      networkObject added 4/23
             });
 
 
