@@ -6,6 +6,7 @@ using TMPro;
 using UnityEngine.SceneManagement;
 using Cinemachine;
 using System;
+using UnityEngine.SocialPlatforms;
 
 public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 {
@@ -43,29 +44,50 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 
     public override void Spawned() //プレイヤーが生成された場合に呼び出される
     {
+        bool isReadyScene = SceneManager.GetActiveScene().name == "Ready";
         if (Object.HasInputAuthority) // これないと全てのクライアントで実行される1
         {
             Local = this; // ローカルプレイヤーの参照
 
-            // Sets the layer of the local players model
-            Utils.SetRenderLayerInChildren(playerModel, LayerMask.NameToLayer("LocalPlayerModel")); //　レイヤーを設定　目はレンダリングされなくなる
+            if (isReadyScene)
+            {
+                Camera.main.transform.position = new Vector3(transform.position.x, Camera.main.transform.position.y, Camera.main.transform.position.z);
 
-            // Disable main camera
-            if (Camera.main != null)
-                Camera.main.gameObject.SetActive(false); //ローカルカメラを使用するときはメインカメラは無効にする
+                //Disable local camera
+                localCameraHandler.gameObject.SetActive(false);
 
-            //Enabled 1 audio listner
-            AudioListener audioListner = GetComponentInChildren<AudioListener>(true);
-            audioListner.enabled = true;
+                //Disable UI for local player
+                //localUI.SetActive(false);
+
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
+            else
+            {
+                // Sets the layer of the local players model
+                Utils.SetRenderLayerInChildren(playerModel, LayerMask.NameToLayer("LocalPlayerModel")); //　レイヤーを設定　目はレンダリングされなくなる
+
+                // Disable main camera
+                if (Camera.main != null)
+                    Camera.main.gameObject.SetActive(false); //ローカルカメラを使用するときはメインカメラは無効にする
+
+                //Enabled 1 audio listner
+                AudioListener audioListner = GetComponentInChildren<AudioListener>(true);
+                audioListner.enabled = true;
 
 
-            // Enabled the local camera
-            localCameraHandler.localCamera.enabled = true;
+                // Enabled the local camera
+                localCameraHandler.localCamera.enabled = true;
+                localCameraHandler.gameObject.SetActive(true);
 
-            // Detach camera if enabled
-            localCameraHandler.transform.parent = null;
+                // Detach camera if enabled
+                localCameraHandler.transform.parent = null;
 
-            //localUI.SetActive(true);  // 4/26 ep5 45:37
+                //localUI.SetActive(true);  // 4/26 ep5 45:37
+
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
 
 
             RPC_SetNickName(GameManager.instance.playerNickName); // rpcを送信する
@@ -148,6 +170,30 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
         if (localCameraHandler != null)
             Destroy(localCameraHandler.gameObject);
     }
+
+    void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        Debug.Log($"{Time.time} OnSceneLoaded: " + scene.name);
+
+        if (scene.name != "Ready")
+        {
+            //Tell the host that we need to perform the spawned code manually. 
+            if (Object.HasStateAuthority && Object.HasInputAuthority)
+                Spawned();
+
+            // ゲームシーン内でのスポーン位置を固定しないため
+            if (Object.HasStateAuthority)
+                GetComponent<CharacterMovementHandler>().RequestRespawn();
+        }
+    }
+
+
+
 
     static void OnScoreChanged(Changed<NetworkPlayer> changed)
     {

@@ -13,28 +13,29 @@ public class CharacterInputHandler : MonoBehaviour // ローカルのユーザーの入力を
 
     // other　components
     LocalCameraHandler localCameraHandler;
-    //CharacterMovementHandler characterMovementHandler;
+    CharacterMovementHandler characterMovementHandler;
 
 
     // Start is called before the first frame update
     private void Awake()
     {
         localCameraHandler = GetComponentInChildren<LocalCameraHandler>();
+        characterMovementHandler = GetComponent<CharacterMovementHandler>();
     }
 
     void Start()
     {
-        Cursor.lockState = CursorLockMode.Locked; // カーソルがはみ出ないようにする
-        Cursor.visible = false;
+        //Cursor.lockState = CursorLockMode.Locked; // カーソルがはみ出ないようにする
+        //Cursor.visible = false;
     }
 
     // Update is called once per frame
     void Update() // ここで入力を収集
     {
-        //if (!characterMovementHandler.Object.HasInputAuthority)
-        //    return;
-        //if (SceneManager.GetActiveScene().name == "Ready")
-        //    return;  // 先走って実装　意味ない
+        if (!characterMovementHandler.Object.HasInputAuthority)
+            return;
+        if (SceneManager.GetActiveScene().name == "Ready")
+            return;  // 先走って実装　意味ない
 
         // View input
         // マウスによる移動は実装しない
