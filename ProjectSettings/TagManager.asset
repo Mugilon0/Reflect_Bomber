@@ -11,8 +11,8 @@ TagManager:
   - 
   - Water
   - UI
-  - 
-  - 
+  - LocalPlayerModel
+  - NetworkHitBox
   - 
   - 
   - 
