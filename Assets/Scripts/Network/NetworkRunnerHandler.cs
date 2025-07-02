@@ -27,23 +27,40 @@ public class NetworkRunnerHandler : MonoBehaviour
 
 
     // Start is called before the first frame update
-    void Start()
+    //void Start()
+    //{
+    //    if (networkRunner == null)
+    //    {
+    //        networkRunner = Instantiate(networkRunnerPrefab);
+    //        networkRunner.name = "Network runner";
+
+    //        if (SceneManager.GetActiveScene().name != "MainMenu")
+    //        {
+    //            var clientTask = InitializeNetworkRunner(networkRunner, "TestSession", GameMode.AutoHostOrClient, GameManager.instance.GetConnectionToken(), NetAddress.Any(), SceneManager.GetActiveScene().buildIndex, null);
+    //        }
+
+    //        Debug.Log($"Server NetworkRunner started");
+    //    }
+
+
+    //}
+
+    private NetworkRunner GetRunner()
     {
         if (networkRunner == null)
         {
-            networkRunner = Instantiate(networkRunnerPrefab);
-            networkRunner.name = "Network runner";
-
-            if (SceneManager.GetActiveScene().name != "MainMenu")
-            {
-                var clientTask = InitializeNetworkRunner(networkRunner, "TestSession", GameMode.AutoHostOrClient, GameManager.instance.GetConnectionToken(), NetAddress.Any(), SceneManager.GetActiveScene().buildIndex, null);
-            }
-
-            Debug.Log($"Server NetworkRunner started");
+            networkRunner = FindObjectOfType<NetworkRunner>();
         }
 
-
+        if (networkRunner == null)
+        {
+            networkRunner = Instantiate(networkRunnerPrefab);
+        }
+        return networkRunner;
     }
+
+
+
 
     public void StartHostMigration(HostMigrationToken hostMigrationToken)
     {
@@ -162,33 +179,40 @@ public class NetworkRunnerHandler : MonoBehaviour
         FindObjectOfType<Spawner>().OnHostMigrationCleanUp();
     }
 
-    public void OnJoinLobby()
+    public void OnJoinLobby(MainMenuUIHandler uiHandler)
     {
-        var clientTask = JoinLobby();
+        NetworkRunner runner = GetRunner();
+        var clientTask = JoinLobby(runner, uiHandler);
     }
 
-    private async Task JoinLobby()
+
+    public async Task JoinLobby(NetworkRunner runner, MainMenuUIHandler uiHandler)
     {
         Debug.Log("ジョインロビー");
 
         string lobbyID = "OurLobbyID";
 
-        var result = await networkRunner.JoinSessionLobby(SessionLobby.Custom, lobbyID);
+        var result = await runner.JoinSessionLobby(SessionLobby.Custom, lobbyID);
 
+        // コールバックする
         if (!result.Ok)
         {
             Debug.LogError($"Unable to join lobby {lobbyID}");
+            uiHandler?.OnLobbyJoinFailure(); // 失敗を通知
         }
         else
         {
             Debug.Log("JoinLobby ok");
+            uiHandler?.OnLobbyJoinSuccess(); // 成功を通知
         }
     }
+
 
     public void CreateGame(string sessionName, string sceneName)
     {
         Debug.Log($"Create session {sessionName} scene {sceneName} build Index {SceneUtility.GetBuildIndexByScenePath($"scenes/{sceneName}")}");
 
+        NetworkRunner runner = GetRunner();
         //Join existing game as a client
         var clientTask = InitializeNetworkRunner(networkRunner, sessionName, GameMode.Host, GameManager.instance.GetConnectionToken(), NetAddress.Any(), SceneUtility.GetBuildIndexByScenePath($"scenes/{sceneName}"), null);
 
@@ -198,6 +222,7 @@ public class NetworkRunnerHandler : MonoBehaviour
     {
         Debug.Log($"Join session {sessionInfo.Name}");
 
+        NetworkRunner runner = GetRunner();
         //Join existing game as a client
         var clientTask = InitializeNetworkRunner(networkRunner, sessionInfo.Name, GameMode.Client, GameManager.instance.GetConnectionToken(), NetAddress.Any(), SceneManager.GetActiveScene().buildIndex, null);
 

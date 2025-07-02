@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class MainMenuUIHandler : MonoBehaviour
 {
@@ -11,6 +12,10 @@ public class MainMenuUIHandler : MonoBehaviour
     public GameObject sessionListPanel;
     public GameObject createRoomPanel;
     public GameObject statusPanel;
+
+    [Header("Buttons")]
+    public Button findGameButton; 
+    public Button createNewGameButton;
 
 
     [Header("Player setting")]
@@ -45,15 +50,53 @@ public class MainMenuUIHandler : MonoBehaviour
 
         GameManager.instance.playerNickName = playerNameInputField.text;
 
+        if (createNewGameButton != null)
+        {
+            createNewGameButton.interactable = false;
+        }
+
+
         NetworkRunnerHandler networkRunnerHandler = FindObjectOfType<NetworkRunnerHandler>();
 
-        networkRunnerHandler.OnJoinLobby();
+        networkRunnerHandler.OnJoinLobby(this);
 
         HideAllPanels();
 
 
         sessionListPanel.gameObject.SetActive(true);
         FindObjectOfType<SessionListUIHandler>(true).OnLookingForGameSeession();
+    }
+
+
+    public void OnLobbyJoinSuccess()
+    {
+        Debug.Log("ロビーに正しく参加できました！UIボタンをupdateします");
+
+        // 部屋作成ボタンを有効にする
+        if (createNewGameButton != null)
+        {
+            createNewGameButton.interactable = true;
+        }
+    }
+
+
+    public void OnLobbyJoinFailure()
+    {
+        Debug.LogWarning("Lobby join failed. Re-enabling UI buttons.");
+
+        // 失敗したので、ボタンを再度有効化して、もう一度試せるようにする
+        if (findGameButton != null)
+        {
+            findGameButton.interactable = true;
+        }
+        if (createNewGameButton != null)
+        {
+            createNewGameButton.interactable = true;
+        } 
+
+        // 必要であれば、ステータスパネルにエラーメッセージを表示するなど
+        // statusPanel.SetActive(true);
+        // statusText.text = "Failed to join lobby. Please try again.";
     }
 
     public void OnCreateNewGameClicked()
