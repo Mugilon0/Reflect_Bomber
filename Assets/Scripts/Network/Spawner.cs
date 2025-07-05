@@ -88,6 +88,9 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
                 Debug.Log($"Found old connection token for token {playerToken}. Assigning controlls to that player");
 
                 networkPlayer.GetComponent<NetworkObject>().AssignInputAuthority(player); // このプレイヤーを制御できるようになる
+                
+                // 再接続するプレイヤーにもSetPlayerObjectを実行
+                runner.SetPlayerObject(player, networkPlayer.GetComponent<NetworkObject>());
 
                 networkPlayer.Spawned();
             }
@@ -110,6 +113,9 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
 
                 NetworkPlayer spawnedNetworkPlayer = runner.Spawn(playerPrefab, spawnPosition, Quaternion.identity, player); // 後でリスポーン地点変える
                 spawnedNetworkPlayer.transform.position = spawnPosition; // 位置のバグ？を修正する
+
+                // PlayerRefに登録(?)
+                runner.SetPlayerObject(player, spawnedNetworkPlayer.Object);
 
                 // Store the token for the player
                 spawnedNetworkPlayer.token = playerToken;

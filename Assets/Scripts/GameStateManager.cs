@@ -34,7 +34,11 @@ public class GameStateManager : NetworkBehaviour
     public static GameStateManager Instance { get; private set; }
 
     public ReadyUIHandler readyUIHandler;
+    public ChatUIHandler chatUIHandler;
+
     public NetworkRunnerHandler networkRunnerHandler;
+
+
 
     public override void Spawned()
     {
@@ -46,6 +50,8 @@ public class GameStateManager : NetworkBehaviour
 
         if (readyUIHandler == null) readyUIHandler = FindObjectOfType<ReadyUIHandler>(true);
         if (networkRunnerHandler == null) networkRunnerHandler = FindObjectOfType<NetworkRunnerHandler>(true);
+
+        if (chatUIHandler == null) chatUIHandler = FindObjectOfType<ChatUIHandler>(true);
 
         // --- Ready状態 ---
         StateMachine[EGameState.Ready].onEnter = prev =>
@@ -451,4 +457,14 @@ public class GameStateManager : NetworkBehaviour
     //
     //     if (Runner.IsServer) Server_SetState(EGameState.Game);
     // }
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
+    public void RPC_RelayChatMessage(string playerName, string message)
+    {
+        // このRPCを受け取った全クライアントが、自分のUIにメッセージを追加する
+        if (chatUIHandler != null)
+        {
+            chatUIHandler.AddNewMessage(playerName, message);
+        }
+    }
 }

@@ -129,6 +129,15 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
         scoreUIHandler = FindObjectOfType<InGameScoreUIHandler>(true);
         //if (scoreUIHandler != null) // OnNickNameChanged()内で呼び出すので不要になった
         //    scoreUIHandler.UpdateAllPlayerScores(); // 初期スコアの表示もここでできる
+
+        if (Object.HasInputAuthority)
+        {
+            // InterfaceManagerが管理する送信ボタンのonPressedイベントに、自分のOnSendメソッドを登録（購読）
+            if (InterfaceManager.Instance != null && InterfaceManager.Instance.readyMessageButtonSend != null)
+            {
+                InterfaceManager.Instance.readyMessageButtonSend.onPressed += OnSend;
+            }
+        }
     }
 
     public void PlayerLeft(PlayerRef player) // プレイヤーが離れるときの処理
@@ -169,6 +178,54 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
         this.nickName = nickName;
     }
 
+
+    // Ready内におけるメッセージ送受信機能
+    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
+    public void RPC_SendMessage(string message, RpcInfo info = default)
+    {
+        // メッセージは16文字まで
+        if (message.Length > 16)
+            message = message.Substring(0, 16);
+
+        if (GameStateManager.Instance != null)
+        {
+            // "this.nickName" を使って、送信者の名前を直接取得します。
+            Debug.Log($"Player {this.nickName} sent message: {message}");
+
+            // GameStateManagerの中継RPCを呼び出します。
+            GameStateManager.Instance.RPC_RelayChatMessage(this.nickName.ToString(), message);
+        }
+        else
+        {
+            Debug.LogError("GameStateManager.Instance is null. Cannot relay chat message.");
+        }
+    }
+
+    private void OnSend()
+    {
+        // 自分（入力権限を持つプレイヤー）からの呼び出しでなければ、何もしない
+        // ※このチェックは、Spawnedでローカルプレイヤーのみがイベント登録するため、厳密には不要ですが、安全のために入れておくと良いです。
+        if (!Object.HasInputAuthority)
+        {
+            return;
+        }
+
+        // InterfaceManager経由で入力欄のテキストを取得
+        string message = InterfaceManager.Instance.readyMessageInputField.text;
+
+        // 入力が空でなければRPCを呼び出す
+        if (!string.IsNullOrWhiteSpace(message))
+        {
+            RPC_SendMessage(message);
+
+            // 送信後、入力欄をクリアする
+            InterfaceManager.Instance.readyMessageInputField.text = "";
+        }
+    }
+
+
+
+
     void OnDestroy()
     {
         if (localCameraHandler != null)
@@ -180,6 +237,14 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
             if (ActivePlayers[Object.InputAuthority] == this)
             {
                 ActivePlayers.Remove(Object.InputAuthority);
+            }
+        }
+
+        if (Object != null && Object.HasInputAuthority)
+        {
+            if (InterfaceManager.Instance != null && InterfaceManager.Instance.readyMessageButtonSend != null)
+            {
+                InterfaceManager.Instance.readyMessageButtonSend.onPressed -= OnSend;
             }
         }
     }
