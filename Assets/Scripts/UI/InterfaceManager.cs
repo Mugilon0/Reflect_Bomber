@@ -8,7 +8,11 @@ using SimplestarGame;
 public class InterfaceManager : MonoBehaviour
 {
     public Animator battleCountdownAnimator;
+    public UIScreen readyChatUI;
+    public UIScreen loadingUI;
+    public UIScreen battleCountdownUI;
     public UIScreen inGameUIScreen;
+
 
     [SerializeField] internal TMPro.TMP_InputField readyMessageInputField;
     [SerializeField] internal ButtonPressDetection readyMessageButtonSend;

@@ -38,9 +38,18 @@ public class ChatUIHandler : MonoBehaviour
 
         // TextMeshProコンポーネントを取得して、テキストを設定
         var messageText = messageInstance.GetComponentInChildren<TextMeshProUGUI>();
+
         if (messageText != null)
         {
-            messageText.text = $"<color=yellow>{playerName}</color>: {message}";
+            if (playerName == "System")
+            {
+                // システムメッセージの場合は、特別な色でメッセージだけを表示
+                messageText.text = $"<i><color=yellow>{message}</color></i>";
+            }
+            else
+            {
+                messageText.text = $"<color=yellow>{playerName}</color>: {message}";
+            }
         }
     }
 }

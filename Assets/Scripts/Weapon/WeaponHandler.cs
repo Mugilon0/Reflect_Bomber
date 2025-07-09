@@ -34,6 +34,9 @@ public class WeaponHandler : NetworkBehaviour
     [Header("throwPower")]
     public float throwPower = 15f;
 
+    // プレイヤーの慣性の強さ
+    public float inertiaFactor = 0.5f;
+
     //[Header("longPressTime")]
     //public float longPressThreshold = 0.5f;
 
@@ -43,12 +46,16 @@ public class WeaponHandler : NetworkBehaviour
     NetworkPlayer networkPlayer;
     NetworkObject networkObject;
 
+    NetworkCharacterControllerPrototypeCustom networkCharacterController;
+
     private void Awake()
     {
         hpHandler = GetComponent<HPHandler>();
         // add 4/23
         networkPlayer = GetBehaviour<NetworkPlayer>();
         networkObject = GetComponent<NetworkObject>();
+
+        networkCharacterController = GetComponent<NetworkCharacterControllerPrototypeCustom>();
     }
 
 
@@ -87,8 +94,10 @@ public class WeaponHandler : NetworkBehaviour
             // プレイヤーの前方向ベクトルを右方向に回転（上方向に角度をつける）
             Vector3 angleDirection = Quaternion.AngleAxis(-throwAngle, playerRight) * forwardDirection;
 
+            // プレイヤーの慣性を追加する
+            Vector3 playerVelocity = networkCharacterController.Velocity;
             //Vector3 angleDirection = Quaternion.AngleAxis(-throwAngle, Vector3.right) * forwardDirection;
-            Vector3 throwForce = angleDirection * throwPower;
+            Vector3 throwForce = (angleDirection * throwPower) + (playerVelocity * inertiaFactor);
 
 
 

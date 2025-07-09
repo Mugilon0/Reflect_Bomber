@@ -123,6 +123,7 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
                 // store the mapping between playerToken and the spawned network player
                 mapTokenIDWithNetworkPlayer[playerToken] = spawnedNetworkPlayer;
 
+                StartCoroutine(NotifyPlayerJoined(spawnedNetworkPlayer));
             }
         }
         else Debug.Log("OnPlayerJoined");
@@ -211,5 +212,15 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
         Debug.Log("Spawner OnHostMigrationCleanUp completed");
     }
 
+    private System.Collections.IEnumerator NotifyPlayerJoined(NetworkPlayer newPlayer)
+    {
+        // プレイヤーのニックネームがネットワーク経由で同期されるのを少し待つ
+        yield return new WaitForSeconds(0.5f);
 
+        if (GameStateManager.Instance != null && newPlayer != null)
+        {
+            // "System"という名前で、入室メッセージを全員に送信
+            GameStateManager.Instance.RPC_RelayChatMessage("System", $"{newPlayer.nickName}さんが参加しました！");
+        }
+    }
 }

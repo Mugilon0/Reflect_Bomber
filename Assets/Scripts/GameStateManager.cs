@@ -70,6 +70,12 @@ public class GameStateManager : NetworkBehaviour
             if (Runner.IsServer) Runner.SessionInfo.IsOpen = true;
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
+
+            if (InterfaceManager.Instance?.readyChatUI != null)
+            {
+                Debug.Log("UIScreen.FocusでreadyChatUIを表示します!");
+                UIScreen.Focus(InterfaceManager.Instance.readyChatUI); // added 7/6
+            }
         };
 
         StateMachine[EGameState.Ready].onExit = next =>
@@ -160,6 +166,13 @@ public class GameStateManager : NetworkBehaviour
             }
 
 
+            // ロード画面を表示
+            if (InterfaceManager.Instance?.loadingUI != null)
+            {
+                // これを呼ぶと、前の画面(readyScreen)とチャットUIがまとめて非表示になる
+                Debug.Log("ロードUIを表示します！");
+                UIScreen.Focus(InterfaceManager.Instance.loadingUI);
+            }
 
             if (Runner.IsServer)
             {
@@ -198,6 +211,12 @@ public class GameStateManager : NetworkBehaviour
             Debug.Log("Introに入った！");
             Debug.Log($"Entering Intro from {prev}");
             IntroTimer = TickTimer.None; // Intro用タイマーリセット
+
+            if (InterfaceManager.Instance?.battleCountdownUI != null)
+            {
+                Debug.Log("BattleCountdownUIを表示します！");
+                UIScreen.Focus(InterfaceManager.Instance.battleCountdownUI);
+            }
 
             // ★修正: InterfaceManager経由でアニメーションを開始する
             if (InterfaceManager.Instance != null)
