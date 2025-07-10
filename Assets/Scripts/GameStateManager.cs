@@ -141,7 +141,7 @@ public class GameStateManager : NetworkBehaviour
                 }
                 else // 2b. カウントダウンが実行されていない場合
                 {
-                    if (currentAllPlayersReady && (NetworkPlayer.ActivePlayers.Count >= 2))   // || Runner.GameMode == GameMode.Single
+                    if (currentAllPlayersReady && (NetworkPlayer.ActivePlayers.Count >= 1))   // || Runner.GameMode == GameMode.Single
                     {
                         Debug.Log("All players ready, server starting countdown.");
                         ReadyCountdownTimer = TickTimer.CreateFromSeconds(Runner, 10); // 10秒カウントダウン
