@@ -174,8 +174,33 @@ public class GameStateManager : NetworkBehaviour
                 UIScreen.Focus(InterfaceManager.Instance.loadingUI);
             }
 
+
+
+
             if (Runner.IsServer)
             {
+                foreach (var playerEntry in NetworkPlayer.ActivePlayers) // added 6/27
+                {
+                    if (playerEntry.Value != null)
+                    {
+                        // 移動ロック
+                        var moveHandler = playerEntry.Value.GetComponent<CharacterMovementHandler>();
+                        if (moveHandler != null)
+                        {
+                            // Introステートの長さ(7秒)に合わせて、7秒間のロックタイマーをセット
+                            moveHandler.MoveLockTimer = TickTimer.CreateFromSeconds(Runner, 7.0f);
+                        }
+
+                        // 攻撃ロック
+                        var weaponHandler = playerEntry.Value.GetComponent<WeaponHandler>();
+                        if (weaponHandler != null)
+                        {
+                            // 7秒間の攻撃ロックタイマーをセット
+                            weaponHandler.FireLockTimer = TickTimer.CreateFromSeconds(Runner, 7.0f);
+                        }
+                    }
+                }
+
                 Runner.SetActiveScene("World1"); // (Runner.SetActiveSceneを呼び出す想定)
                 Debug.Log("SetActiveScene(World1)を呼んだ");
             }
@@ -231,27 +256,27 @@ public class GameStateManager : NetworkBehaviour
 
             if (Runner.IsServer)
             {
-                foreach (var playerEntry in NetworkPlayer.ActivePlayers) // added 6/27
-                {
-                    if (playerEntry.Value != null)
-                    {
-                        // 移動ロック
-                        var moveHandler = playerEntry.Value.GetComponent<CharacterMovementHandler>();
-                        if (moveHandler != null)
-                        {
-                            // Introステートの長さ(4秒)に合わせて、4秒間のロックタイマーをセット
-                            moveHandler.MoveLockTimer = TickTimer.CreateFromSeconds(Runner, 4.0f);
-                        }
+                //foreach (var playerEntry in NetworkPlayer.ActivePlayers) // added 6/27
+                //{
+                //    if (playerEntry.Value != null)
+                //    {
+                //        // 移動ロック
+                //        var moveHandler = playerEntry.Value.GetComponent<CharacterMovementHandler>();
+                //        if (moveHandler != null)
+                //        {
+                //            // Introステートの長さ(4秒)に合わせて、4秒間のロックタイマーをセット
+                //            moveHandler.MoveLockTimer = TickTimer.CreateFromSeconds(Runner, 4.0f);
+                //        }
 
-                        // 攻撃ロック
-                        var weaponHandler = playerEntry.Value.GetComponent<WeaponHandler>();
-                        if (weaponHandler != null)
-                        {
-                            // 4秒間の攻撃ロックタイマーをセット
-                            weaponHandler.FireLockTimer = TickTimer.CreateFromSeconds(Runner, 4.0f);
-                        }
-                    }
-                }
+                //        // 攻撃ロック
+                //        var weaponHandler = playerEntry.Value.GetComponent<WeaponHandler>();
+                //        if (weaponHandler != null)
+                //        {
+                //            // 4秒間の攻撃ロックタイマーをセット
+                //            weaponHandler.FireLockTimer = TickTimer.CreateFromSeconds(Runner, 4.0f);
+                //        }
+                //    }
+                //}
 
 
                 // アニメーションの長さに合わせて遅延時間を調整

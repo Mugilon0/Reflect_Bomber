@@ -59,6 +59,10 @@ public class CharacterMovementHandler : NetworkBehaviour
 
         }
 
+        // added 7/10
+        if (SceneManager.GetActiveScene().name == "Ready")
+            return;
+
         if (GetInput(out NetworkInputData networkInputData)) //Å@Get the input from the network
         {
             // Rotate the input from the network
@@ -82,7 +86,7 @@ public class CharacterMovementHandler : NetworkBehaviour
 
             // Check if we've fallen off the world
             CheckFallRespawn();
-        
+
         }
     }
 

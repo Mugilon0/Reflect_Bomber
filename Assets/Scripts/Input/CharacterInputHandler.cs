@@ -34,6 +34,7 @@ public class CharacterInputHandler : MonoBehaviour // ローカルのユーザーの入力を
     {
         if (!characterMovementHandler.Object.HasInputAuthority)
             return;
+
         if (SceneManager.GetActiveScene().name == "Ready")
             return;  // 先走って実装　意味ない
 
