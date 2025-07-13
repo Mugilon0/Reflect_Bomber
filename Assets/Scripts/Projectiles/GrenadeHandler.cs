@@ -55,69 +55,74 @@ public class GrenadeHandler : NetworkBehaviour
     public override void FixedUpdateNetwork()
     {
         //if (Object.HasInputAuthority) {}
+        if (!Object.IsValid) return;
 
-        if (explodeTickTimer.Expired(Runner)) // タイマーが期限切れになったら実行される
+        if (explodeTickTimer.Expired(Runner))
         {
-
-            Runner.Despawn(networkObject);
-
-
-            // stop the explode timer from being triggered again
             explodeTickTimer = TickTimer.None;
+            Explode();
             return;
         }
+
 
         // ボムに当たったかどうか判定 　Check if the rocket has hit anything
         int hitCount = Runner.LagCompensation.OverlapSphere(checkForImpackPoint.position, 0.5f, thrownByPlayerRef, hits, collisionLayers, HitOptions.IncludePhysX); // 近くに剛体がないかチェック
 
-        bool isValidHit = false;
+        //bool isValidHit = false;
 
         if (hitCount > 0)
-            isValidHit = true;
+        {
+            Explode();
+        }
+
+
+        //// これは自分で生成したボムのダメージ食らわないようにするための処理
+        //for (int i = 0; i < hitCount; i++)
+        //{
+        //    // check if we have hit a Hitbox
+        //    if (hits[i].Hitbox != null)
+        //    {
+        //        // check that we didn't fire the rocket and hit ourselves. this can happen if the lag is a big high
+        //        if (hits[i].Hitbox.Root.GetBehaviour<NetworkObject>() == thrownByNetworkObject) // 自分にヒットした場合
+        //            isValidHit = false;
+        //    }
+        //}
+    }
+
+    private void Explode()
+    {
+        // サーバー上でのみ実行し、多重爆発を防ぐ
+        if (!Object.HasStateAuthority || !Object.IsValid) return;
+
+        // 爆発範囲内のプレイヤーにダメージを与える
+        int hitCount = Runner.LagCompensation.OverlapSphere(transform.position, 2, thrownByPlayerRef, hits, collisionLayers, HitOptions.None);
 
         for (int i = 0; i < hitCount; i++)
         {
-            // check if we have hit a Hitbox
-            if (hits[i].Hitbox != null)
+            HPHandler hpHandler = hits[i].Hitbox.transform.root.GetComponent<HPHandler>();
+
+            if (hpHandler != null && thrownByNetworkObject != null && thrownByNetworkObject.IsValid)
             {
-                // check that we didn't fire the rocket and hit ourselves. this can happen if the lag is a big high
-                if (hits[i].Hitbox.Root.GetBehaviour<NetworkObject>() == thrownByNetworkObject) // 自分にヒットした場合
-                    isValidHit = false;
-            }
-        }
-
-        if (isValidHit)
-        {
-            // 爆発パーティクルの当たり判定
-            hitCount = Runner.LagCompensation.OverlapSphere(checkForImpackPoint.position, 2, thrownByPlayerRef, hits, collisionLayers, HitOptions.None);
-
-            for (int i = 0; i < hitCount; i++)
-            {
-                // 範囲にいるすべてのHPHandlerに対して実行
-                HPHandler hpHandler = hits[i].Hitbox.transform.root.GetComponent<HPHandler>();
-
-                if (hpHandler != null     && thrownByNetworkObject != null && thrownByNetworkObject.IsValid)
+                NetworkPlayer attackerPlayer = thrownByNetworkObject.GetComponent<NetworkPlayer>();
+                if (attackerPlayer != null)
                 {
-                    NetworkPlayer attackerPlayer = thrownByNetworkObject.GetComponent<NetworkPlayer>();
-                    if (attackerPlayer != null)
-                    {
-                        hpHandler.OnTakeDamage(attackerPlayer, 1);
-                    }
+                    hpHandler.OnTakeDamage(attackerPlayer, 1);
                 }
-
-
             }
-
-            Runner.Despawn(networkObject);
         }
 
+        // 爆発エフェクトを生成する (Despawnedから移動)
+        //Instantiate(explosionParticleSystemPrefab, transform.position, Quaternion.identity);
+
+        // グレネード自身をDespawnする
+        Runner.Despawn(Object);
     }
 
     public override void Despawned(NetworkRunner runner, bool hasState)
     {
         MeshRenderer grenadeMesh = GetComponentInChildren<MeshRenderer>(); //ネットワーク上の正しい位置に 補完もあるし別の位置にあるかもしれない
 
-        Instantiate(explosionParticleSystemPrefab, grenadeMesh.transform.position, Quaternion.identity);
+        Instantiate(explosionParticleSystemPrefab, grenadeMesh.transform.position, Quaternion.identity); // Explode()に変更したので不要 7/13
 
     }
 
