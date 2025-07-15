@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Fusion;
+// using UnityEditor.Experimental.GraphView;
 //using UnityEngine.UI;
 
 public class HPHandler : NetworkBehaviour
@@ -112,8 +113,8 @@ public class HPHandler : NetworkBehaviour
     //    //Function only called on the server & used by weaponHandler
     public void OnTakeDamage(NetworkPlayer damageCausedByPlayerNickname, byte damageAmount)
     {
-        if (!Object.HasStateAuthority)
-            return;
+        //if (!Object.HasStateAuthority)
+        //    return;
 
         ////Only take damage while alive 死んでたらそれ以上ダメージ受けなくてよい
         if (isDead)
@@ -122,12 +123,19 @@ public class HPHandler : NetworkBehaviour
         // Ensure that we cannot flip the byte as it can't handle minuys values
         if (damageAmount > HP)
             damageAmount = HP;
-
-
         HP -= damageAmount;
 
 
-        damageCausedByPlayerNickname.score += 1;
+        if (damageCausedByPlayerNickname != GetComponent<NetworkPlayer>())
+        {
+            // 攻撃者のScoreHandlerを取得して、スコア加算を依頼する
+            ScoreCalculator scoreCalculator = damageCausedByPlayerNickname.GetComponent<ScoreCalculator>();
+            if (scoreCalculator != null)
+            {
+                scoreCalculator.OnKill();
+            }
+        }
+
         Debug.Log($"{Time.time} {transform.name} took damage got {HP} left");
 
         // Player died

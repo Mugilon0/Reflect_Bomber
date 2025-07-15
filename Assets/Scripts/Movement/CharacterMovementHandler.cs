@@ -17,6 +17,7 @@ public class CharacterMovementHandler : NetworkBehaviour
     //other components
     NetworkCharacterControllerPrototypeCustom networkCharacterControllerPrototypeCustom;
     HPHandler hpHandler;
+    private ScoreCalculator scoreCalculator;
     //Camera localCamera; // マウスでカメラ動かさないならまだ不要
 
     private void Awake()
@@ -24,6 +25,7 @@ public class CharacterMovementHandler : NetworkBehaviour
         networkCharacterControllerPrototypeCustom = GetComponent<NetworkCharacterControllerPrototypeCustom>();
         hpHandler = GetComponent<HPHandler>();
         //localCamera = GetComponentInChildren<Camera>(); // まだ不要
+        scoreCalculator = GetComponent<ScoreCalculator>();
     }
     // Start is called before the first frame update
     void Start()
@@ -115,6 +117,12 @@ public class CharacterMovementHandler : NetworkBehaviour
 
     void Respawn()
     {
+        if (scoreCalculator != null)
+        {
+            scoreCalculator.OnDeathPenalty();
+        }
+
+
         networkCharacterControllerPrototypeCustom.TeleportToPosition(Utils.GetRandomSpawnPoint()); // transform.positionをかえるよりok
 
         hpHandler.OnRespawned();

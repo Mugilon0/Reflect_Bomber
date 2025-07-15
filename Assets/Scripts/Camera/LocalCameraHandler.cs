@@ -108,7 +108,7 @@ public class LocalCameraHandler : MonoBehaviour
     }
 
     private void OnDestroy()
-    {           
+    {
         // x‚Í‚¢‚ê‚Ä‚¢‚È‚¢
         if (cameraRotationY != 0)
         {
