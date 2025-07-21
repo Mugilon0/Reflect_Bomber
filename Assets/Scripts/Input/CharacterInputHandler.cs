@@ -9,11 +9,19 @@ public class CharacterInputHandler : MonoBehaviour // ローカルのユーザーの入力を
     Vector2 moveInputVector = Vector2.zero; //ユーザーからの入力を収集する
     Vector2 viewInputVector = Vector2.zero; // 見る方向
 
-    bool isGrenadeFireButtonPressed = false;
+    //bool isGrenadeFireButtonPressed = false;
 
     // other　components
     LocalCameraHandler localCameraHandler;
     CharacterMovementHandler characterMovementHandler;
+
+    private float chargeTimer = 0f;
+    private bool isCharging = false;
+    public float longThrowThreshold = 0.3f; // この秒数以上で長距離ボムになる
+
+    // isGrenadeFireButtonPressed を削除し、以下に置き換え
+    private bool shortThrowTriggered = false;
+    private bool longThrowTriggered = false;
 
 
     // Start is called before the first frame update
@@ -38,6 +46,7 @@ public class CharacterInputHandler : MonoBehaviour // ローカルのユーザーの入力を
         if (SceneManager.GetActiveScene().name == "Ready")
             return;  // 先走って実装　意味ない
 
+
         // View input
         // マウスによる移動は実装しない
         viewInputVector.x = Input.GetAxis("Mouse X");
@@ -50,10 +59,36 @@ public class CharacterInputHandler : MonoBehaviour // ローカルのユーザーの入力を
 
 
 
-        // Throw grenade
         if (Input.GetMouseButtonDown(0))
-            isGrenadeFireButtonPressed = true;
-        
+        {
+            isCharging = true;
+            chargeTimer = 0f;
+        }
+
+        // 押している間、タイマーを加算
+        if (isCharging)
+        {
+            chargeTimer += Time.deltaTime;
+        }
+
+        // 離した瞬間
+        if (Input.GetMouseButtonUp(0))
+        {
+            if (isCharging)
+            {
+                // しきい値より短ければ短距離ボム
+                if (chargeTimer < longThrowThreshold)
+                {
+                    shortThrowTriggered = true;
+                }
+                // しきい値以上なら長距離ボム
+                else
+                {
+                    longThrowTriggered = true;
+                }
+            }
+            isCharging = false;
+        }
 
         // if (Input.GetButtonDown("Jump"))
         //isJumpButtonPressed = true;
@@ -88,10 +123,13 @@ public class CharacterInputHandler : MonoBehaviour // ローカルのユーザーの入力を
 
 
         // Grenade fire data
-        networkInputData.isGrenadeFireButtonPressed = isGrenadeFireButtonPressed; //ネットワークに渡す
+        networkInputData.isShortThrow = shortThrowTriggered;
+        networkInputData.isLongThrow = longThrowTriggered;
+        networkInputData.longThrowCharge = chargeTimer; // 溜めた時間をそのまま渡す
 
-        //Reset variables now that we have reaad their states
-        isGrenadeFireButtonPressed = false;
+        // サーバーに送ったらトリガーをリセット
+        shortThrowTriggered = false;
+        longThrowTriggered = false;
 
 
         //isJumpButtonPressed = false;

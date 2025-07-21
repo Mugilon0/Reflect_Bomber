@@ -169,6 +169,9 @@ public class GrenadeHandler : NetworkBehaviour
     //}
     private void OnCollisionEnter(Collision collision)
     {
+        if (Object == null) return;
+        if (hasExploded) return;
+
         // サーバー（State Authorityを持つプレイヤー）以外は何もしない
         if (!Object.HasStateAuthority)
         {

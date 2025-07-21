@@ -12,4 +12,8 @@ public struct NetworkInputData : INetworkInput //@ƒvƒŒƒCƒ„[‚Ì“ü—Í‚ğƒlƒbƒgƒ[ƒ
 
     public NetworkBool isGrenadeFireButtonPressed;
     //public NetworkBool isLongGrenadeFireButtonPressed;
+
+    public NetworkBool isShortThrow;
+    public NetworkBool isLongThrow;
+    public float longThrowCharge; // ‚Ç‚Ì‚­‚ç‚¢—­‚ß‚½‚©
 }

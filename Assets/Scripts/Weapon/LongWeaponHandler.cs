@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Fusion;
 
-public class WeaponHandler : NetworkBehaviour
+public class LongWeaponHandler : NetworkBehaviour
 {
     [Networked]
     public TickTimer FireLockTimer { get; set; } // 攻撃ロック用のタイマー　added 6/27
@@ -68,7 +68,7 @@ public class WeaponHandler : NetworkBehaviour
     //    if (GetInput(out NetworkInputData networkInputData))
     //    {
     //        if (CanFire && networkInputData.isGrenadeFireButtonPressed)
-    //            FireGrenade(networkInputData.aimForwardVector);
+    //            FireLongGrenade(networkInputData.aimForwardVector);
     //    }
     //}
 
@@ -77,18 +77,17 @@ public class WeaponHandler : NetworkBehaviour
     // Timing 
     TickTimer grenadeFireDelay = TickTimer.None;  //アイテムボックスないので0から弾を生成できるように実装
 
-    public void Fire(NetworkInputData input)
+    public void LongFire(NetworkInputData input)
     {
-        // サーバーからの入力情報の中に、短距離ボムの発射命令があった場合のみ処理
-        if (CanFire && input.isShortThrow)
+        // サーバーからの入力情報の中に、長距離ボムの発射命令があった場合のみ処理
+        if (CanFire && input.isLongThrow)
         {
-            FireGrenade(input.aimForwardVector);
+            // 現時点では、溜め時間などは無視して、とりあえず発射する
+            FireLongGrenade(input.aimForwardVector);
         }
     }
 
-
-
-    void FireGrenade(Vector3 aimForwardVector)
+    void FireLongGrenade(Vector3 aimForwardVector)
     {
         if (grenadeFireDelay.ExpiredOrNotRunning(Runner))
         {
