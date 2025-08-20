@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using Fusion;
 using Unity.VisualScripting;
+using System;
+
 
 public class GrenadeHandler : NetworkBehaviour
 {
@@ -35,11 +37,32 @@ public class GrenadeHandler : NetworkBehaviour
     // ★ 2. 多重爆発を防ぐための「記憶フラグ」も追加
     private bool hasExploded = false;
 
+    public enum EBombType
+    {
+        ShortRange,
+        LongRange
+    }
+    [Networked] private EBombType bombType { get; set; }
 
-    public void Throw(Vector3 throwForce, PlayerRef thrownByPlayerRef, NetworkObject thrownByNetworkObject, string thrownByPlayerName)
+    private float explosionRadius;
+
+
+    public void Throw(Vector3 throwForce, PlayerRef thrownByPlayerRef, NetworkObject thrownByNetworkObject, string thrownByPlayerName, EBombType type)
     {
         networkObject = GetComponent<NetworkObject>();
         networkRigidbody = GetComponent<NetworkRigidbody>();
+
+        bombType = type;
+
+        switch(bombType)
+        {
+            case EBombType.ShortRange:
+                explosionRadius = 1.0f;
+                break;
+            case EBombType.LongRange:
+                explosionRadius = 4.0f;
+                break;
+        }
 
 
         networkRigidbody.Rigidbody.AddForce(throwForce, ForceMode.Impulse);
@@ -111,7 +134,7 @@ public class GrenadeHandler : NetworkBehaviour
         if (!Object.HasStateAuthority || !Object.IsValid) return;
 
         // ★★★ PlayerRef.None を使い、「どのプレイヤーも無視しない」を指定する ★★★
-        int hitCount = Runner.LagCompensation.OverlapSphere(transform.position, 3, PlayerRef.None, hits, ~0, HitOptions.None);
+        int hitCount = Runner.LagCompensation.OverlapSphere(transform.position, explosionRadius, PlayerRef.None, hits, ~0, HitOptions.None);
 
         // 検出された全てのオブジェクト（hitCount分）をループでチェックする
         for (int i = 0; i < hitCount; i++)
@@ -178,6 +201,16 @@ public class GrenadeHandler : NetworkBehaviour
             return;
         }
 
+        if (bombType == EBombType.LongRange)
+        {
+            // "Default" レイヤーは、多くのUnityプロジェクトで地面や壁に使われる標準的なレイヤーです
+            if (collision.gameObject.CompareTag("Ground"))
+            {
+                IsCollisionExplosionQueued = true;
+                return; // 地面に触れたら即爆発させるので、以降の処理は不要
+            }
+        }
+
         // ぶつかった相手が別のグレネードかどうかをチェックする
         if (collision.gameObject.TryGetComponent<GrenadeHandler>(out var otherGrenade))
         {
@@ -190,3 +223,4 @@ public class GrenadeHandler : NetworkBehaviour
     }
 
 }
+

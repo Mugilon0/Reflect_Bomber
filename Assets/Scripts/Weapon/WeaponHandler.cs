@@ -5,9 +5,10 @@ using Fusion;
 
 public class WeaponHandler : NetworkBehaviour
 {
-    [Networked]
-    public TickTimer FireLockTimer { get; set; } // 攻撃ロック用のタイマー　added 6/27
-    public bool CanFire => FireLockTimer.ExpiredOrNotRunning(Runner); // タイマーが動いていない時だけtrue
+    // weaponManagerで共同に扱う
+    //[Networked]
+    //public TickTimer FireLockTimer { get; set; } // 攻撃ロック用のタイマー　added 6/27
+    //public bool CanFire => FireLockTimer.ExpiredOrNotRunning(Runner); // タイマーが動いていない時だけtrue
 
 
     [Header("Prefabs")] //ラベルがでて見やすくなるだけ
@@ -80,18 +81,18 @@ public class WeaponHandler : NetworkBehaviour
     public void Fire(NetworkInputData input)
     {
         // サーバーからの入力情報の中に、短距離ボムの発射命令があった場合のみ処理
-        if (CanFire && input.isShortThrow)
-        {
+        //if (CanFire && input.isShortThrow)
+        //{
             FireGrenade(input.aimForwardVector);
-        }
+        //}
     }
 
 
 
     void FireGrenade(Vector3 aimForwardVector)
     {
-        if (grenadeFireDelay.ExpiredOrNotRunning(Runner))
-        {
+        //if (grenadeFireDelay.ExpiredOrNotRunning(Runner))
+        //{
             //string fakeNickname = "Guest"; // 後でちゃんとニックネームとれるようにするそして消す！！！！！！！！！！！！！
 
             Vector3 forwardDirection = aimForwardVector.normalized;
@@ -114,14 +115,14 @@ public class WeaponHandler : NetworkBehaviour
 
             Runner.Spawn(grenadePrefab, aimPoint.position + aimForwardVector * 1.5f, Quaternion.LookRotation(aimForwardVector), Object.InputAuthority, (runner, spawnedGrenade) =>
             {
-                spawnedGrenade.GetComponent<GrenadeHandler>().Throw(throwForce, Object.InputAuthority, networkObject, networkPlayer.nickName.ToString()); // aimForwardVector * 15 → throwForce      networkObject added 4/23
+                spawnedGrenade.GetComponent<GrenadeHandler>().Throw(throwForce, Object.InputAuthority, networkObject, networkPlayer.nickName.ToString(), GrenadeHandler.EBombType.ShortRange); // aimForwardVector * 15 → throwForce      networkObject added 4/23
             });
 
 
 
             // start a new timer to avoid grenade spamming
-            grenadeFireDelay = TickTimer.CreateFromSeconds(Runner, 1.0f);
-        }
+            //grenadeFireDelay = TickTimer.CreateFromSeconds(Runner, 1.0f);
+        //}
     }
 
 }

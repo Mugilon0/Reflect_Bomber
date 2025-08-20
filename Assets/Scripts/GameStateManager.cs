@@ -192,12 +192,14 @@ public class GameStateManager : NetworkBehaviour
                         }
 
                         // 攻撃ロック
-                        var weaponHandler = playerEntry.Value.GetComponent<WeaponHandler>();
-                        if (weaponHandler != null)
+                        var weaponManager = playerEntry.Value.GetComponent<WeaponManager>();
+                        if (weaponManager != null)
                         {
                             // 7秒間の攻撃ロックタイマーをセット
-                            weaponHandler.FireLockTimer = TickTimer.CreateFromSeconds(Runner, 7.0f);
+                            weaponManager.LockWeapons(7.0f);
                         }
+
+
                     }
                 }
 
