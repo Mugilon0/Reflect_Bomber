@@ -116,8 +116,6 @@ public class LongWeaponHandler : NetworkBehaviour
                 spawnedGrenade.GetComponent<GrenadeHandler>().Throw(throwForce, Object.InputAuthority, networkObject, networkPlayer.nickName.ToString(), GrenadeHandler.EBombType.LongRange); // aimForwardVector * 15 Å® throwForce      networkObject added 4/23
             });
 
-
-
             // start a new timer to avoid grenade spamming
             //grenadeFireDelay = TickTimer.CreateFromSeconds(Runner, 1.0f);
         //}

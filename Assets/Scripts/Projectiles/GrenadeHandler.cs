@@ -184,6 +184,14 @@ public class GrenadeHandler : NetworkBehaviour
 
         Instantiate(explosionParticleSystemPrefab, grenadeMesh.transform.position, Quaternion.identity); // Explode()Ç…ïœçXÇµÇΩÇÃÇ≈ïsóv 7/13
 
+        if (bombType == EBombType.ShortRange)
+        {
+            AudioManager.Play("StrawberryExplosionSFX", AudioManager.MixerTarget.SFX, grenadeMesh.transform.position);
+        }
+        else // EBombType.LongRange
+        {
+            AudioManager.Play("OrangeExplosionSFX", AudioManager.MixerTarget.SFX, grenadeMesh.transform.position);
+        }
     }
 
     //public override void Despawned(NetworkRunner runner, bool hasState)
