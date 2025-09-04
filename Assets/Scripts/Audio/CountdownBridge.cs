@@ -7,11 +7,11 @@ public class CountdownBridge : MonoBehaviour
 
     public void PlayCountdownSound()
     {
-        AudioManager.Play(countdownSound, AudioManager.MixerTarget.SFX);
+        AudioManager.Play(countdownSound, AudioManager.MixerTarget.UI);
     }
 
     public void FinishCountdown()
     {
-        AudioManager.Play(countdownFinish, AudioManager.MixerTarget.SFX);
+        AudioManager.Play(countdownFinish, AudioManager.MixerTarget.UI);
     }
 }

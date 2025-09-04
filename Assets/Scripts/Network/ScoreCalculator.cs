@@ -23,6 +23,8 @@ public class ScoreCalculator : NetworkBehaviour
         // 自爆でなければスコアを加算
         // (このメソッドを呼び出す側で自爆チェックをするので、ここでは不要)
         networkPlayer.score++;
+
+        RPC_PlayPointGainSound();
     }
 
     /// <summary>
@@ -55,4 +57,14 @@ public class ScoreCalculator : NetworkBehaviour
         // スコアを減算し、0未満にならないようにする
         networkPlayer.score = Mathf.Max(0, currentScore - penalty);
     }
+
+
+    [Rpc(RpcSources.StateAuthority, RpcTargets.InputAuthority)]
+    private void RPC_PlayPointGainSound(RpcInfo info = default)
+    {
+        // このRPCは InputAuthority (操作権限を持つプレイヤー) にだけ届く
+        // ここでAudioManagerを呼び出すことで、攻撃した本人のPCでのみ音が再生される
+        AudioManager.Play("PointGainSFX", AudioManager.MixerTarget.SFX);
+    }
+
 }

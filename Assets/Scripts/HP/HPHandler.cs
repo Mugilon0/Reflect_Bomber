@@ -24,7 +24,7 @@ public class HPHandler : NetworkBehaviour
     //    public Color uiOnHitColor;
     //    public Image uiOnHitImage;
 
-    public MeshRenderer bodyMeshRenderer;
+    public SkinnedMeshRenderer bodyMeshRenderer;
     Color defaultMeshBodyColor;
 
     //    List<FlashMeshRenderer> flashMeshRenderers = new List<FlashMeshRenderer>();
@@ -193,6 +193,13 @@ public class HPHandler : NetworkBehaviour
 
     private void OnDeath()
     {
+        // DeathSFX‚ğÄ¶
+        if (Object.HasInputAuthority)
+        {
+            // ©•ª©g‚¾‚Á‚½ê‡‚Ì‚İA€–SSFX‚ğÄ¶
+            AudioManager.Play("DeathSFX", AudioManager.MixerTarget.SFX);
+        }
+
         Debug.Log($"{Time.time} OnDeath");
 
         playerModel.gameObject.SetActive(false);

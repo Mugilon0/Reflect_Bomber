@@ -12,12 +12,17 @@ public class CharacterOutfitHandler : NetworkBehaviour
     public Image readyCheckboxImage;
 
 
+    [Header("Character Visuals")]
+    public SkinnedMeshRenderer bodySkinnedMeshRenderer; // BodyのSkinnedMeshRendererをアサイン
+    public List<Material> bodyMaterials; // 4つのマテリアルをアサインするリスト
+
 
     [Networked(OnChanged = nameof(OnIsDoneWithCharacterSelectionChanged))]
     public NetworkBool isDoneWithCharacterSelection { get; set; }
 
 
-
+    [Networked(OnChanged = nameof(OnMaterialIndexChanged))]
+    public int MaterialIndex { get; set; } = -1; // -1で初期化
 
     // Start is called before the first frame update
     void Start()
@@ -25,10 +30,49 @@ public class CharacterOutfitHandler : NetworkBehaviour
         
     }
 
+    public override void Spawned()
+    {
+        // オブジェクトがクライアント上で生成された際に、既にインデックスが設定されていればマテリアルを適用
+        if (MaterialIndex != -1)
+        {
+            ApplyMaterial();
+        }
+    }
+
     // Update is called once per frame
     void Update()
     {
         
+    }
+    public void SetInitialMaterialIndex(int index)
+    {
+        // サーバーのみがこの値を設定できる
+        if (Object.HasStateAuthority)
+        {
+            MaterialIndex = index;
+
+            ApplyMaterial();
+        }
+    }
+
+    private void ApplyMaterial()
+    {
+        if (bodySkinnedMeshRenderer != null && bodyMaterials != null && bodyMaterials.Count > 0)
+        {
+            if (MaterialIndex >= 0 && MaterialIndex < bodyMaterials.Count)
+            {
+                // インデックスに対応するマテリアルを適用
+                bodySkinnedMeshRenderer.material = bodyMaterials[MaterialIndex];
+            }
+            else
+            {
+                Debug.LogWarning($"MaterialIndex {MaterialIndex} is out of bounds for bodyMaterials list (count: {bodyMaterials.Count})");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("SkinnedMeshRenderer or BodyMaterials list is not assigned in CharacterOutfitHandler.");
+        }
     }
 
 
@@ -66,6 +110,13 @@ public class CharacterOutfitHandler : NetworkBehaviour
         if (isDoneWithCharacterSelection)
             readyCheckboxImage.gameObject.SetActive(true);
         else readyCheckboxImage.gameObject.SetActive(false);
+    }
+
+
+
+    static void OnMaterialIndexChanged(Changed<CharacterOutfitHandler> changed)
+    {
+        changed.Behaviour.ApplyMaterial();
     }
 
     void OnEnable()

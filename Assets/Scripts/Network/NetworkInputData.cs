@@ -16,4 +16,7 @@ public struct NetworkInputData : INetworkInput //@ƒvƒŒƒCƒ„[‚Ì“ü—Í‚ğƒlƒbƒgƒ[ƒ
     public NetworkBool isShortThrow;
     public NetworkBool isLongThrow;
     public float longThrowCharge; // ‚Ç‚Ì‚­‚ç‚¢—­‚ß‚½‚©
+
+    // —­‚ßƒAƒjƒ[ƒVƒ‡ƒ““¯Šú—p
+    public NetworkBool IsCharging;
 }

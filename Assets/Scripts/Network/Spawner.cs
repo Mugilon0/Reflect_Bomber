@@ -6,6 +6,7 @@ using Fusion.Sockets;
 using System;
 using UnityEngine.SceneManagement;
 using UnityEngine.Diagnostics;
+using System.Linq;
 
 public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
 {
@@ -113,6 +114,41 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
 
                 NetworkPlayer spawnedNetworkPlayer = runner.Spawn(playerPrefab, spawnPosition, Quaternion.identity, player); // 後でリスポーン地点変える
                 spawnedNetworkPlayer.transform.position = spawnPosition; // 位置のバグ？を修正する
+
+                // それぞれ各プレイヤーの色を変える
+                CharacterOutfitHandler outfitHandler = spawnedNetworkPlayer.GetComponent<CharacterOutfitHandler>();
+                if (outfitHandler != null)
+                {
+                    // runner.ActivePlayers.Count() で、この新しいプレイヤーを含めた現在の総人数を取得します
+                    int playerCount = runner.ActivePlayers.Count();
+
+                    if (playerCount == 1)
+                    {
+                        // 最初の1人なので、ホストです。
+                        // 何もせず、デフォルトのマテリアルを使用します。
+                        Debug.Log($"Host (Player {player.PlayerId}) joined. Using default material. Total players: {playerCount}");
+                    }
+                    else
+                    {
+                        // 2人目以降なので、クライアントです。
+                        // 2人目 -> materialIndex 0 (2 - 2)
+                        // 3人目 -> materialIndex 1 (3 - 2)
+                        // 4人目 -> materialIndex 2 (4 - 2)
+                        int materialIndex = playerCount - 2;
+
+                        // マテリアルリスト（3つ）の範囲内かチェック
+                        if (materialIndex >= 0 && materialIndex < outfitHandler.bodyMaterials.Count)
+                        {
+                            outfitHandler.SetInitialMaterialIndex(materialIndex);
+                            Debug.Log($"Client (Player {player.PlayerId}) joined. Assigning material index {materialIndex}. Total players: {playerCount}");
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"Could not assign material to player {player.PlayerId}. Calculated index {materialIndex} is out of bounds.");
+                        }
+                    }
+                }
+
 
                 // PlayerRefに登録(?)
                 runner.SetPlayerObject(player, spawnedNetworkPlayer.Object);

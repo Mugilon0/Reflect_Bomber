@@ -134,6 +134,9 @@ public class CharacterInputHandler : MonoBehaviour // ローカルのユーザーの入力を
 
         //isJumpButtonPressed = false;
 
+        // 溜めのトリガーをネットワークインプットデータにセット
+        networkInputData.IsCharging = isCharging;
+
         return networkInputData;
     }
 
