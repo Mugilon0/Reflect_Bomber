@@ -9,7 +9,7 @@ public class WeaponManager : NetworkBehaviour
     // Še•Ší‚Ìê–å‰Æ‚ğŠo‚¦‚Ä‚¨‚­
     private WeaponHandler weaponHandler;
     private LongWeaponHandler longWeaponHandler;
-
+    private PutWeaponHandler putWeaponHadler;
 
     private HPHandler hpHandler;
 
@@ -25,6 +25,7 @@ public class WeaponManager : NetworkBehaviour
     {
         weaponHandler = GetComponent<WeaponHandler>();
         longWeaponHandler = GetComponent<LongWeaponHandler>();
+        putWeaponHadler = GetComponent<PutWeaponHandler>();
 
         hpHandler = GetComponent<HPHandler>();
     }
@@ -57,6 +58,11 @@ public class WeaponManager : NetworkBehaviour
                 hasFired = true;
             }
 
+            if (input.isPutBomb && putWeaponHadler != null)
+            {
+                putWeaponHadler.PutBomb();
+                hasFired = true; 
+            }
 
             if (hasFired)
             {
@@ -66,3 +72,4 @@ public class WeaponManager : NetworkBehaviour
         }
     }
 }
+

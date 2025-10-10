@@ -6,7 +6,9 @@ using Fusion;
 public struct NetworkInputData : INetworkInput //@ƒvƒŒƒCƒ„[‚Ì“ü—Í‚ğƒlƒbƒgƒ[ƒN‚ğ’Ê‚¶‚Ä‘—M input.Set()‚Ég—p
 {
     // float‚È‚Ç‚ÍÅ“K‚Å‚Í‚È‚¢
-    public Vector2 movementInput; // x z
+    public Vector2 movementInput; // x 
+    public float rotationInput; // 20251005
+
     public Vector3 aimForwardVector;
     //public NetworkBool isJumpPressed; // ¡‰ñ‚Íg‚í‚È‚¢
 
@@ -16,6 +18,8 @@ public struct NetworkInputData : INetworkInput //@ƒvƒŒƒCƒ„[‚Ì“ü—Í‚ğƒlƒbƒgƒ[ƒ
     public NetworkBool isShortThrow;
     public NetworkBool isLongThrow;
     public float longThrowCharge; // ‚Ç‚Ì‚­‚ç‚¢—­‚ß‚½‚©
+
+    public NetworkBool isPutBomb;
 
     // —­‚ßƒAƒjƒ[ƒVƒ‡ƒ““¯Šú—p
     public NetworkBool IsCharging;

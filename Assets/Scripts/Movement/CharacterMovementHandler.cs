@@ -67,8 +67,11 @@ public class CharacterMovementHandler : NetworkBehaviour
 
         if (GetInput(out NetworkInputData networkInputData)) //　Get the input from the network
         {
+            // 1. 回転処理: 左右の入力でキャラクターのY軸を回転させる
+            networkCharacterControllerPrototypeCustom.Rotate(networkInputData.rotationInput);
+
             // Rotate the input from the network
-            transform.forward = networkInputData.aimForwardVector; // たいだな方法 急に向きがかわると変になるかも
+            //transform.forward = networkInputData.aimForwardVector; // たいだな方法 急に向きがかわると変になるかも
 
 
             // Cancel out rotation on X axis as we dont want our character to tilt 上下に向いたとき傾かないようにする
@@ -79,10 +82,12 @@ public class CharacterMovementHandler : NetworkBehaviour
             // Move
             if (CanMove)
             {
-                Vector3 moveDirection = transform.forward * networkInputData.movementInput.y + transform.right * networkInputData.movementInput.x;
+                //Vector3 moveDirection = transform.forward * networkInputData.movementInput.y + transform.right * networkInputData.movementInput.x;
+                Vector3 moveDirection = transform.forward * networkInputData.movementInput.y;
                 moveDirection.Normalize();
 
-                networkCharacterControllerPrototypeCustom.Move(moveDirection); // データはおそらくCharacterInputHandlerからもらう
+                //networkCharacterControllerPrototypeCustom.Move(moveDirection); // データはおそらくCharacterInputHandlerからもらう
+                networkCharacterControllerPrototypeCustom.Move(moveDirection, networkInputData.movementInput.y); // ← このように変更
             }
 
 

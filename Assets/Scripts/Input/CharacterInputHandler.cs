@@ -1,13 +1,14 @@
 using Fusion;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class CharacterInputHandler : MonoBehaviour // ローカルのユーザーの入力を取得するスクリプト
 {
     Vector2 moveInputVector = Vector2.zero; //ユーザーからの入力を収集する
-    Vector2 viewInputVector = Vector2.zero; // 見る方向
+    //Vector2 viewInputVector = Vector2.zero; // 見る方向
 
     //bool isGrenadeFireButtonPressed = false;
 
@@ -23,6 +24,8 @@ public class CharacterInputHandler : MonoBehaviour // ローカルのユーザーの入力を
     private bool shortThrowTriggered = false;
     private bool longThrowTriggered = false;
 
+    // 置きボムのトリガー変数
+    private bool isPutBomb = false; 
 
     // Start is called before the first frame update
     private void Awake()
@@ -47,10 +50,10 @@ public class CharacterInputHandler : MonoBehaviour // ローカルのユーザーの入力を
             return;  // 先走って実装　意味ない
 
 
-        // View input
-        // マウスによる移動は実装しない
-        viewInputVector.x = Input.GetAxis("Mouse X");
-        viewInputVector.y = Input.GetAxis("Mouse Y") * -1;
+        //// View input
+        //// マウスによる移動は実装しない
+        //viewInputVector.x = Input.GetAxis("Mouse X");
+        //viewInputVector.y = Input.GetAxis("Mouse Y") * -1;
 
 
         // Move input
@@ -93,17 +96,23 @@ public class CharacterInputHandler : MonoBehaviour // ローカルのユーザーの入力を
         // if (Input.GetButtonDown("Jump"))
         //isJumpButtonPressed = true;
 
-        if (Input.GetKeyDown(KeyCode.C))
+        if (Input.GetMouseButtonDown(1))
         {
-            //
-            Debug.Log("Cボタンを押した");
-            NetworkPlayer.Local.is3rdPersonCamera = !NetworkPlayer.Local.is3rdPersonCamera;
+            isPutBomb = true;
         }
+
+
+        //if (Input.GetKeyDown(KeyCode.C))
+        //{
+        //    //
+        //    Debug.Log("Cボタンを押した");
+        //    NetworkPlayer.Local.is3rdPersonCamera = !NetworkPlayer.Local.is3rdPersonCamera;
+        //}
 
 
 
         // Set view ローカルカメラの値を更新する
-        localCameraHandler.SetViewInputVector(viewInputVector);
+        //localCameraHandler.SetViewInputVector(viewInputVector);
     }
 
     // OnInputでは保持しないでここでする networkに同期したい情報を割り当てる
@@ -118,6 +127,8 @@ public class CharacterInputHandler : MonoBehaviour // ローカルのユーザーの入力を
 
         networkInputData.movementInput = moveInputVector;
 
+        // Rotation data (X軸、つまり左右入力を回転に割り当て)
+        networkInputData.rotationInput = moveInputVector.x;
         // Jump data
         //networkInputData.isJumpPressed = isJumpButtonPressed;
 
@@ -127,10 +138,12 @@ public class CharacterInputHandler : MonoBehaviour // ローカルのユーザーの入力を
         networkInputData.isLongThrow = longThrowTriggered;
         networkInputData.longThrowCharge = chargeTimer; // 溜めた時間をそのまま渡す
 
+        networkInputData.isPutBomb = isPutBomb;
+
         // サーバーに送ったらトリガーをリセット
         shortThrowTriggered = false;
         longThrowTriggered = false;
-
+        isPutBomb = false;
 
         //isJumpButtonPressed = false;
 

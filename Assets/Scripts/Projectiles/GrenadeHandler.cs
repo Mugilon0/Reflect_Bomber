@@ -40,7 +40,8 @@ public class GrenadeHandler : NetworkBehaviour
     public enum EBombType
     {
         ShortRange,
-        LongRange
+        LongRange,
+        PutRange
     }
     [Networked] private EBombType bombType { get; set; }
 
@@ -54,13 +55,16 @@ public class GrenadeHandler : NetworkBehaviour
 
         bombType = type;
 
-        switch(bombType)
+        switch (bombType)
         {
             case EBombType.ShortRange:
                 explosionRadius = 1.0f;
                 break;
             case EBombType.LongRange:
                 explosionRadius = 4.0f;
+                break;
+            case EBombType.PutRange:
+                explosionRadius = 3.0f;
                 break;
         }
 
@@ -188,9 +192,13 @@ public class GrenadeHandler : NetworkBehaviour
         {
             AudioManager.Play("StrawberryExplosionSFX", AudioManager.MixerTarget.SFX, grenadeMesh.transform.position);
         }
-        else // EBombType.LongRange
+        else if (bombType == EBombType.LongRange)
         {
             AudioManager.Play("OrangeExplosionSFX", AudioManager.MixerTarget.SFX, grenadeMesh.transform.position);
+        }
+        else if (bombType == EBombType.PutRange)
+        {
+            AudioManager.Play("PinappleExplosionSFX", AudioManager.MixerTarget.SFX, grenadeMesh.transform.position);
         }
     }
 
@@ -231,4 +239,3 @@ public class GrenadeHandler : NetworkBehaviour
     }
 
 }
-

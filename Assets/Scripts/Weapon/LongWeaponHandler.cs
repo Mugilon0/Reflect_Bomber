@@ -82,8 +82,8 @@ public class LongWeaponHandler : NetworkBehaviour
         // サーバーからの入力情報の中に、長距離ボムの発射命令があった場合のみ処理
         //if (CanFire && input.isLongThrow)
         //{
-            // 現時点では、溜め時間などは無視して、とりあえず発射する
-            FireLongGrenade(input.aimForwardVector);
+        // 現時点では、溜め時間などは無視して、とりあえず発射する
+        FireLongGrenade(input.aimForwardVector);
         //}
     }
 
@@ -91,33 +91,33 @@ public class LongWeaponHandler : NetworkBehaviour
     {
         //if (grenadeFireDelay.ExpiredOrNotRunning(Runner))
         //{
-            //string fakeNickname = "Guest"; // 後でちゃんとニックネームとれるようにするそして消す！！！！！！！！！！！！！
+        //string fakeNickname = "Guest"; // 後でちゃんとニックネームとれるようにするそして消す！！！！！！！！！！！！！
 
-            Vector3 forwardDirection = aimForwardVector.normalized;
+        Vector3 forwardDirection = aimForwardVector.normalized;
 
-            // プレイヤーの Transform を取得
-            Transform playerTransform = NetworkPlayer.ActivePlayers[Object.InputAuthority].transform;
+        // プレイヤーの Transform を取得
+        Transform playerTransform = NetworkPlayer.ActivePlayers[Object.InputAuthority].transform;
 
-            // プレイヤーのローカル右方向ベクトル
-            Vector3 playerRight = playerTransform.right;
+        // プレイヤーのローカル右方向ベクトル
+        Vector3 playerRight = playerTransform.right;
 
-            // プレイヤーの前方向ベクトルを右方向に回転（上方向に角度をつける）
-            Vector3 angleDirection = Quaternion.AngleAxis(-throwAngle, playerRight) * forwardDirection;
+        // プレイヤーの前方向ベクトルを右方向に回転（上方向に角度をつける）
+        Vector3 angleDirection = Quaternion.AngleAxis(-throwAngle, playerRight) * forwardDirection;
 
-            // プレイヤーの慣性を追加する
-            Vector3 playerVelocity = networkCharacterController.Velocity;
-            //Vector3 angleDirection = Quaternion.AngleAxis(-throwAngle, Vector3.right) * forwardDirection;
-            Vector3 throwForce = (angleDirection * throwPower) + (playerVelocity * inertiaFactor);
+        // プレイヤーの慣性を追加する
+        Vector3 playerVelocity = networkCharacterController.Velocity;
+        //Vector3 angleDirection = Quaternion.AngleAxis(-throwAngle, Vector3.right) * forwardDirection;
+        Vector3 throwForce = (angleDirection * throwPower) + (playerVelocity * inertiaFactor);
 
 
 
-            Runner.Spawn(grenadePrefab, aimPoint.position + aimForwardVector * 1.5f, Quaternion.LookRotation(aimForwardVector), Object.InputAuthority, (runner, spawnedGrenade) =>
-            {
-                spawnedGrenade.GetComponent<GrenadeHandler>().Throw(throwForce, Object.InputAuthority, networkObject, networkPlayer.nickName.ToString(), GrenadeHandler.EBombType.LongRange); // aimForwardVector * 15 → throwForce      networkObject added 4/23
-            });
+        Runner.Spawn(grenadePrefab, aimPoint.position + aimForwardVector * 0.5f, Quaternion.LookRotation(aimForwardVector), Object.InputAuthority, (runner, spawnedGrenade) =>
+        {
+            spawnedGrenade.GetComponent<GrenadeHandler>().Throw(throwForce, Object.InputAuthority, networkObject, networkPlayer.nickName.ToString(), GrenadeHandler.EBombType.LongRange); // aimForwardVector * 15 → throwForce      networkObject added 4/23
+        });
 
-            // start a new timer to avoid grenade spamming
-            //grenadeFireDelay = TickTimer.CreateFromSeconds(Runner, 1.0f);
+        // start a new timer to avoid grenade spamming
+        //grenadeFireDelay = TickTimer.CreateFromSeconds(Runner, 1.0f);
         //}
     }
 

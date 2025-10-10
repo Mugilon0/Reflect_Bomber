@@ -33,14 +33,14 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
     public LocalCameraHandler localCameraHandler;
 
     // Camera mode 
-    public bool is3rdPersonCamera { get; set; }
+    //public bool is3rdPersonCamera { get; set; }
 
 
     // Start is called before the first frame update
-    void Start()
-    {
+    //void Start()
+    //{
 
-    }
+    //}
     private void Awake()
     {
         // このオブジェクトがシーン遷移で破棄されないようにする
@@ -70,7 +70,7 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
             else
             {
                 // Sets the layer of the local players model
-                Utils.SetRenderLayerInChildren(playerModel, LayerMask.NameToLayer("LocalPlayerModel")); //　レイヤーを設定　目はレンダリングされなくなる
+                //Utils.SetRenderLayerInChildren(playerModel, LayerMask.NameToLayer("LocalPlayerModel")); //　レイヤーを設定　目はレンダリングされなくなる
 
                 // Disable main camera
                 if (Camera.main != null)
@@ -281,7 +281,7 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
             }
             else // "World1" などのゲームシーンでの設定
             {
-                Utils.SetRenderLayerInChildren(playerModel, LayerMask.NameToLayer("LocalPlayerModel"));
+                //Utils.SetRenderLayerInChildren(playerModel, LayerMask.NameToLayer("LocalPlayerModel"));
                 if (Camera.main != null) Camera.main.gameObject.SetActive(false);
 
                 var audioListener = GetComponentInChildren<AudioListener>(true);
