@@ -7,6 +7,7 @@ using UnityEngine.SceneManagement;
 using Cinemachine;
 using System;
 using UnityEngine.SocialPlatforms;
+using AAMAP;
 
 public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 {
@@ -138,6 +139,60 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
                 InterfaceManager.Instance.readyMessageButtonSend.onPressed += OnSend;
             }
         }
+
+
+
+
+
+        //var mapIcon = GetComponentInChildren<MapIcon>();
+
+        //// もしMapIconが見つかったら
+        //if (mapIcon != null)
+        //{
+        //    // シーン内から「Minimap Camera」という名前のゲームオブジェクトを探す
+        //    var minimapCameraObject = GameObject.Find("Minimap Camera");
+
+        //    // もしMinimap Cameraが見つかったら
+        //    if (minimapCameraObject != null)
+        //    {
+        //        // MapIconのMinimap Camera欄に、見つけてきたカメラを自動で設定する
+        //        mapIcon.SetMinimapCamera(minimapCameraObject);
+        //    }
+        //    else
+        //    {
+        //        // 見つからなかった場合は、エラーメッセージをコンソールに表示する
+        //        Debug.LogError("Minimap Cameraがシーンに見つかりませんでした。");
+        //    }
+
+        //    // (もし全画面マップも使うなら、Map Cameraも同様に探して設定します)
+        //    // var mapCameraObject = GameObject.Find("Map Camera");
+        //    // if (mapCameraObject != null)
+        //    // {
+        //    //     mapIcon.SetMapCamera(mapCameraObject);
+        //    // }
+        //}
+        //else
+        //{
+        //    Debug.LogError("プレイヤープレハブの子にMapIconが見つかりませんでした。");
+        //}
+
+
+        //// ★★★ ミニマップに自分を追跡ターゲットとして設定する ★★★
+        //// シーン内にあるMinimapManagerコンポーネントを探す
+        //var minimapManager = FindObjectOfType<MinimapManager>();
+
+        //// もしMinimapManagerが見つかったら
+        //if (minimapManager != null)
+        //{
+        //    // 追跡ターゲット(Target Object)に自分自身(このプレイヤーオブジェクト)を設定する
+        //    minimapManager.SetTargetObject(this.gameObject);
+        //}
+        //else
+        //{
+        //    Debug.LogError("Minimapがシーンに見つかりませんでした。");
+        //}
+
+
     }
 
     public void PlayerLeft(PlayerRef player) // プレイヤーが離れるときの処理
@@ -269,6 +324,7 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 
         // 新しいシーン用の初期化処理 (Spawnedのロジックを参考に再整理)
         bool isReadyScene = scene.name == "Ready";
+        bool isWorld1Scene = scene.name == "World1";
 
         if (Object.HasInputAuthority) // ローカルプレイヤーの処理
         {
@@ -279,7 +335,7 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
             }
-            else // "World1" などのゲームシーンでの設定
+            else if(isWorld1Scene) // "World1" などのゲームシーンでの設定
             {
                 //Utils.SetRenderLayerInChildren(playerModel, LayerMask.NameToLayer("LocalPlayerModel"));
                 if (Camera.main != null) Camera.main.gameObject.SetActive(false);
@@ -293,6 +349,59 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 
                 Cursor.lockState = CursorLockMode.Locked;
                 Cursor.visible = false;
+
+
+
+                // 以下Miinimapの参照に関する処理
+                // DontDestroyOnLoadで持ち越されたInterfaceManagerを探す
+                InterfaceManager interfaceManager = FindObjectOfType<InterfaceManager>();
+                if (interfaceManager == null)
+                {
+                    Debug.LogError("InterfaceManagerが見つかりません！");
+                    return;
+                }
+
+                // InterfaceManagerの中から、非アクティブなMinimapManagerを探す
+                MinimapManager minimapManager = interfaceManager.GetComponentInChildren<MinimapManager>(true);
+                if (minimapManager == null)
+                {
+                    Debug.LogError("InterfaceManager内にMinimapが見つかりません！");
+                    return;
+                }
+
+                // 自分の子からMapIconを探す
+                MapIcon mapIcon = GetComponentInChildren<MapIcon>();
+                if (mapIcon == null)
+                {
+                    Debug.LogError("プレイヤープレハブの子にMapIconが見つかりません！");
+                    return;
+                }
+
+                // World1シーンから「Minimap Camera」を探す
+                GameObject minimapCameraObject = GameObject.Find("Minimap Camera");
+                if (minimapCameraObject == null)
+                {
+                    Debug.LogError("World1シーンにMinimap Cameraが見つかりません！");
+                    return;
+                } else
+                {
+                    Debug.Log("Minimap cameraをみつけました");
+                }
+
+                    // --- すべての部品が見つかったので、接続を開始 ---
+
+                    // 1. MapIconにカメラを教える
+                    mapIcon.SetMinimapCamera(minimapCameraObject);
+
+                // 2. ミニマップに追跡ターゲット（自分自身）を教える
+                minimapManager.SetTargetObject(this.gameObject);
+
+                minimapManager.SetCamera(minimapCameraObject);
+
+
+                Debug.Log("ミニマップの接続が完了しました！");
+
+
             }
         }
         else // リモートプレイヤーの処理
@@ -359,9 +468,6 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
     //        }
     //    }
     //}
-
-
-
 
 
 }

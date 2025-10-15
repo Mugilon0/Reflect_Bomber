@@ -47,6 +47,9 @@ public class GrenadeHandler : NetworkBehaviour
 
     private float explosionRadius;
 
+    [SerializeField]
+    private float customGravity = -9.8f; // インスペクターから調整できるようにする
+
 
     public void Throw(Vector3 throwForce, PlayerRef thrownByPlayerRef, NetworkObject thrownByNetworkObject, string thrownByPlayerName, EBombType type)
     {
@@ -87,6 +90,13 @@ public class GrenadeHandler : NetworkBehaviour
 
     public override void FixedUpdateNetwork()
     {
+        // このオブジェクトがサーバー上で物理的な権限を持っている場合のみ実行
+        if (Object.HasStateAuthority)
+        {
+            // カスタム重力を適用する
+            networkRigidbody.Rigidbody.AddForce(new Vector3(0, customGravity, 0), ForceMode.Acceleration);
+        }
+
         //if (Object.HasInputAuthority) {}
         if (!Object.IsValid) return;
 
