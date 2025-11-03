@@ -25,6 +25,8 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 
     [Networked(OnChanged = nameof(OnScoreChanged))]
     public int score { get; set; } = 0;
+    [Networked]
+    public NetworkBool IsLoaded { get; set; } //
 
     private InGameScoreUIHandler scoreUIHandler;
 

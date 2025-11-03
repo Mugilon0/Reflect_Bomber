@@ -20,6 +20,7 @@ public class GameStateManager : NetworkBehaviour
     public EGameState Current { get; set; }
     public EGameState Previous { get; private set; }
 
+    bool allPlayersLoaded = false;
     [Networked] private TickTimer DelayTimer { get; set; }
     [Networked] private EGameState DelayedState { get; set; }
 
@@ -179,6 +180,10 @@ public class GameStateManager : NetworkBehaviour
 
             if (Runner.IsServer)
             {
+                // あとで消す 10/25
+                //Debug.Log("レベルをスポーンします");
+                //Level.Load(ResourcesManager.Instance.levels[RoundManager.Instance.CurrentLevel]);
+
                 foreach (var playerEntry in NetworkPlayer.ActivePlayers) // added 6/27
                 {
                     if (playerEntry.Value != null)
@@ -211,9 +216,14 @@ public class GameStateManager : NetworkBehaviour
         {
             if (Runner.IsServer)
             {
-                // TODO: 全プレイヤーの "World1" シーンロード完了を待つロジック
-                // この完了通知を受けて Intro 状態へ遷移するのが理想
-                // if (HaveAllPlayersLoadedScene("World1")) Server_SetState(EGameState.Intro);
+                // 全員がレベルをスポーンできたか確認
+
+                if (RoundManager.Instance != null)
+                {
+                    allPlayersLoaded = RoundManager.Instance.CheckAllPlayersLoaded;
+                }
+
+
 
                 // 仮の遅延 (実際のロード完了チェックを推奨)
                 // 1回だけ遅延セットするようにする
@@ -221,16 +231,27 @@ public class GameStateManager : NetworkBehaviour
                 {
                     // DelayTimerをLoading待機に使う (Server_DelaySetStateは汎用なのでここでは直接TickTimerをセット)
                     DelayTimer = TickTimer.CreateFromSeconds(Runner, 3.0f); // 3秒ロードしたと仮定
+
+
                     Debug.Log("Loading: Server will transition to Intro after 3 seconds (simulated load time).");
                 }
-                if (DelayTimer.IsRunning && DelayTimer.Expired(Runner))
+                if (DelayTimer.IsRunning && DelayTimer.Expired(Runner) && allPlayersLoaded)
                 {
                     DelayTimer = TickTimer.None;
+
+                    // さらに全員がコースのスポーンを確認できたら状態遷移する
+                    allPlayersLoaded = false;
                     Server_SetState(EGameState.Intro);
                 }
             }
         };
-        StateMachine[EGameState.Loading].onExit = next => { /* ... */ };
+        StateMachine[EGameState.Loading].onExit = next => {
+            if (Runner.IsServer)
+            {
+                Debug.Log("IsLoadedをfalseに戻します");
+                RoundManager.Instance.Server_ResetIsLoaded();
+            }
+        };
 
         // --- Intro状態 ---
         StateMachine[EGameState.Intro].onEnter = prev =>

@@ -5,15 +5,17 @@ using Fusion;
 using Fusion.Sockets;
 using System;
 using System.Linq;
+using static Cinemachine.DocumentationSortingAttribute;
 //using Helpers.Linq;
 
-public class RoundManager : NetworkBehaviour
+public class RoundManager : NetworkBehaviour, INetworkRunnerCallbacks
 {
     //[Networked] // (OnChanged = nameof(OnSessionConfigChanged))はいったん無視　ゲーム時間の選択肢
     //public int MaxTimeIndex { get; set; }
     public static float MaxTime => 120.0f;
 
-
+    [Networked]
+    public int CurrentLevel { get; set; }
     [Networked]
     public int TickStarted { get; set; }
     public static float Time => Instance?.Object?.IsValid == true // ラウンドの経過時間を計算する もしGameManagerがネットワーク上で有効なら、さらにタイマーが開始済みかチェックする。開始済みなら**経過時間（秒）**を計算して返し、まだなら0を返す。そもそもGameManagerが有効でなければ、問答無用で0を返す。
@@ -32,6 +34,8 @@ public class RoundManager : NetworkBehaviour
             Instance = this;
             // シーンをまたいで存在させる
             DontDestroyOnLoad(gameObject);
+
+            Runner.AddCallbacks(this);
         }
         else
         {
@@ -50,6 +54,14 @@ public class RoundManager : NetworkBehaviour
         }
     }
 
+    public void OnSceneLoadDone(NetworkRunner runner)
+    {
+        if (runner.SimulationUnityScene.name == "World1")
+        {
+            Debug.Log("レベルをスポーンします");
+            Level.Load(ResourcesManager.Instance.levels[CurrentLevel]);
+        }
+    }
 
     //static void OnSessionConfigChanged(Changed<GameManager> changed)
     //{
@@ -57,9 +69,79 @@ public class RoundManager : NetworkBehaviour
     //}  // ゲーム時間をプレイヤーが決めるわけではないので省略
 
 
+    [Rpc(RpcSources.All, RpcTargets.StateAuthority, HostMode = RpcHostMode.SourceIsHostPlayer)]
+    public void Rpc_LoadDone(RpcInfo info = default)
+    {
+        NetworkPlayer.ActivePlayers[info.Source].IsLoaded = true;
+        ////PlayerRegistry.GetPlayer(info.Source).IsLoaded = true;
+        //foreach (var playerEntry in NetworkPlayer.ActivePlayers) // ActivePlayers をイテレート
+        //{
+            
+        //}
+    }
+
+    public void Server_ResetIsLoaded()
+    {
+        if (!Runner.IsServer) return;
+
+        Debug.Log("SERVER: 全員の IsLoaded フラグを false にリセットします。");
+        foreach (var entry in NetworkPlayer.ActivePlayers)
+        {
+            if (entry.Value != null)
+            {
+                // IsLoaded は NetworkPlayer.cs にある想定
+                entry.Value.IsLoaded = false;
+            }
+        }
+    }
 
 
+    public bool CheckAllPlayersLoaded
+    {
+        get
+        {
+            // サーバー以外は判定不要
+            if (!Runner.IsServer) return false;
 
+            // プレイヤーがいない場合は「未完了」とする
+            if (NetworkPlayer.ActivePlayers.Count == 0) //  && Runner.GameMode != GameMode.Single多分いらない条件 10/25
+            {
+                return false;
+            }
 
+            // --- もしくは、あなたが懸念していた foreach での書き方 ---
+            foreach (var entry in NetworkPlayer.ActivePlayers)
+            {
+                NetworkPlayer player = entry.Value;
+                if (player == null || !player.Object.IsValid || !player.IsLoaded)
+                {
+                    return false; // 一人でもロードが終わっていなければ false
+                }
+            }
+
+            return true; // 全員がロード完了
+
+            //LINQ を使った1行での書き方(こちらが好みかもしれません)
+            //return NetworkPlayer.ActivePlayers.Values.All(p => p != null && p.Object.IsValid && p.IsLoaded);
+        }
+    }
+
+    void INetworkRunnerCallbacks.OnPlayerJoined(NetworkRunner runner, PlayerRef player) { }
+    void INetworkRunnerCallbacks.OnPlayerLeft(NetworkRunner runner, PlayerRef player) { }
+    void INetworkRunnerCallbacks.OnInput(NetworkRunner runner, NetworkInput input) { }
+    void INetworkRunnerCallbacks.OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input) { }
+    void INetworkRunnerCallbacks.OnShutdown(NetworkRunner runner, ShutdownReason shutdownReason) { }
+    void INetworkRunnerCallbacks.OnConnectedToServer(NetworkRunner runner) { }
+    void INetworkRunnerCallbacks.OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) { }
+    void INetworkRunnerCallbacks.OnConnectFailed(NetworkRunner runner, NetAddress remoteAddress, NetConnectFailedReason reason) { }
+    void INetworkRunnerCallbacks.OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message) { }
+    void INetworkRunnerCallbacks.OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList) { }
+    void INetworkRunnerCallbacks.OnCustomAuthenticationResponse(NetworkRunner runner, Dictionary<string, object> data) { }
+    void INetworkRunnerCallbacks.OnHostMigration(NetworkRunner runner, HostMigrationToken hostMigrationToken) { }
+    //void INetworkRunnerCallbacks.OnSceneLoadDone(NetworkRunner runner) { }
+    void INetworkRunnerCallbacks.OnSceneLoadStart(NetworkRunner runner) { }
+    public void OnDisconnectedFromServer(NetworkRunner runner) { }
+
+    public void OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ArraySegment<byte> data) { }
 
 }
