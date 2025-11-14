@@ -91,9 +91,6 @@ public class WeaponHandler : NetworkBehaviour
 
     void FireGrenade(Vector3 aimForwardVector)
     {
-        //if (grenadeFireDelay.ExpiredOrNotRunning(Runner))
-        //{
-        //string fakeNickname = "Guest"; // 後でちゃんとニックネームとれるようにするそして消す！！！！！！！！！！！！！
 
         Vector3 forwardDirection = aimForwardVector.normalized;
 
@@ -109,7 +106,16 @@ public class WeaponHandler : NetworkBehaviour
         // プレイヤーの慣性を追加する
         Vector3 playerVelocity = networkCharacterController.Velocity;
         //Vector3 angleDirection = Quaternion.AngleAxis(-throwAngle, Vector3.right) * forwardDirection;
-        Vector3 throwForce = (angleDirection * throwPower) + (playerVelocity * inertiaFactor);
+        float forwardSpeed = playerVelocity.x * forwardDirection.x + playerVelocity.z * forwardDirection.z;
+
+        // 3. 基本の投擲力に、前進/後進スピードを加味した「新しい投擲力」を計算
+        float modifiedPower = throwPower + (forwardSpeed * inertiaFactor);
+
+        // 4. 0以下にならないようにする（最低保証パワー）
+        modifiedPower = Mathf.Max(1.0f, modifiedPower);
+
+        // 5. 角度はそのままに、新しい力で投擲ベクトルを決定
+        Vector3 throwForce = angleDirection * modifiedPower;
 
 
 

@@ -6,15 +6,17 @@ public class ScoreCalculator : NetworkBehaviour
     // 参照するコンポーネント
     private NetworkPlayer networkPlayer;
 
+    [Header("Score Popup Settings")]
+    [SerializeField] private GameObject scorePopupPrefab;
+    [SerializeField] private Vector3 popupOffset = new Vector3(1.5f, 2.0f, 0); // キャラの右上側にオフセット
+    [SerializeField] private float popupDuration = 1.5f;
     private void Awake()
     {
-        // 必要なコンポーネントをあらかじめ取得しておく
         networkPlayer = GetComponent<NetworkPlayer>();
     }
 
-    /// <summary>
+
     /// 他のプレイヤーを倒した時にスコアを加算する
-    /// </summary>
     public void OnKill()
     {
         // サーバー以外では何もしない
@@ -25,6 +27,7 @@ public class ScoreCalculator : NetworkBehaviour
         networkPlayer.score++;
 
         RPC_PlayPointGainSound();
+        //RPC_ShowScorePopup(); --11/13
     }
 
     /// <summary>
@@ -41,9 +44,6 @@ public class ScoreCalculator : NetworkBehaviour
         // ルールに基づいて減点数を計算
         if (currentScore > 0)
         {
-            // 新しいルール：スコアを3で割った商に1を足すと、ペナルティ点数になる
-            // (例: スコア6 -> 6/3 + 1 = 3点減点)
-            // (例: スコア9 -> 9/3 + 1 = 4点減点)
             penalty = (currentScore / 3) + 1;
         }
 
@@ -66,5 +66,15 @@ public class ScoreCalculator : NetworkBehaviour
         // ここでAudioManagerを呼び出すことで、攻撃した本人のPCでのみ音が再生される
         AudioManager.Play("PointGainSFX", AudioManager.MixerTarget.SFX);
     }
+
+
+    //[Rpc(RpcSources.StateAuthority, RpcTargets.InputAuthority)]
+    //private void RPC_ShowScorePopup(RpcInfo info = default)
+    //{
+    //    ScorePopupManager.ShowPopup(transform.position, "+1", popupOffset);
+    //}
+
+
+
 
 }

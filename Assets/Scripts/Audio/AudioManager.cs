@@ -24,8 +24,10 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioBank musicBank;
 
     // Singleton
-
     public static AudioManager Instance { get; private set; }
+
+    // キャッシュ（最適化）
+    private float lastTimeScale = 1f;
 
     private void Awake()
     {
@@ -35,6 +37,14 @@ public class AudioManager : MonoBehaviour
             DontDestroyOnLoad(gameObject);
             InitBanks();
             musicSource.outputAudioMixerGroup = musicMixer;
+
+            // AudioPoolManagerを確認・生成
+            if (AudioPoolManager.Instance == null)
+            {
+                GameObject poolObj = new GameObject("AudioPoolManager");
+                poolObj.AddComponent<AudioPoolManager>();
+                DontDestroyOnLoad(poolObj);
+            }
         }
         else
         {
@@ -48,15 +58,18 @@ public class AudioManager : MonoBehaviour
         masterMixer.updateMode = AudioMixerUpdateMode.UnscaledTime;
     }
 
-    // Update
-
+    // Update（最適化版）
     private void Update()
     {
-        SetPitchByTimeScale();
+        // Time.timeScaleが変わった時のみ更新
+        if (Mathf.Abs(Time.timeScale - lastTimeScale) > 0.01f)
+        {
+            SetPitchByTimeScale();
+            lastTimeScale = Time.timeScale;
+        }
     }
 
     // Initialization
-
     private void InitBanks()
     {
         soundBank.Build();
@@ -73,25 +86,15 @@ public class AudioManager : MonoBehaviour
 
     // Public Functions
 
-    // Play Sounds
+    // Play Sounds（最適化版 - オブジェクトプール使用）
 
     public static void Play(string clip, AudioMixerGroup mixerTarget, Vector3? position = null)
     {
         if (Instance.soundBank.TryGetAudio(clip, out AudioClip audioClip))
         {
-            GameObject clipObj = new GameObject(clip, typeof(AudioDestroyer));
-            AudioSource src = clipObj.AddComponent<AudioSource>();
-            if (position.HasValue)
-            {
-                clipObj.transform.position = position.Value;
-                src.spatialBlend = 1;
-                src.rolloffMode = AudioRolloffMode.Linear;
-                src.maxDistance = 50;
-                src.dopplerLevel = 0;
-            }
-            src.clip = audioClip;
-            src.outputAudioMixerGroup = mixerTarget;
-            src.Play();
+            // オブジェクトプールから取得（Instantiateなし）
+            PooledAudioSource pooled = AudioPoolManager.Instance.Get();
+            pooled.Play(audioClip, mixerTarget, position, null);
         }
         else
         {
@@ -118,17 +121,9 @@ public class AudioManager : MonoBehaviour
     {
         if (Instance.soundBank.TryGetAudio(clip, out AudioClip audioClip))
         {
-            GameObject clipObj = new GameObject(clip, typeof(AudioDestroyer));
-            AudioSource src = clipObj.AddComponent<AudioSource>();
-            FollowTarget follow = clipObj.AddComponent<FollowTarget>();
-            src.spatialBlend = 1;
-            src.rolloffMode = AudioRolloffMode.Linear;
-            src.maxDistance = 50;
-            src.dopplerLevel = 0;
-            src.clip = audioClip;
-            src.outputAudioMixerGroup = Instance.GetMixerGroup(mixerTarget);
-            follow.target = target;
-            src.Play();
+            // オブジェクトプールから取得（Instantiateなし）
+            PooledAudioSource pooled = AudioPoolManager.Instance.Get();
+            pooled.Play(audioClip, Instance.GetMixerGroup(mixerTarget), null, target);
         }
         else
         {
@@ -161,13 +156,11 @@ public class AudioManager : MonoBehaviour
 
     public static void PauseMusic()
     {
-        //Instance.masterMixer.FindSnapshot("Paused").TransitionTo(0.5f);
         Instance.musicSource.Pause();
     }
 
     public static void UnpauseMusic()
     {
-        //Instance.masterMixer.FindSnapshot("Default").TransitionTo(0.5f);
         Instance.musicSource.UnPause();
     }
 
@@ -223,14 +216,12 @@ public class AudioManager : MonoBehaviour
 
     // Prefs
 
-    // returns a linear [0-1] volume value
     private static float GetPref(string pref)
     {
-        float v = PlayerPrefs.GetFloat(pref, 0.75f);
+        float v = PlayerPrefs.GetFloat(pref, 0.45f);
         return v;
     }
 
-    // sets a linear [0-1] volume value
     private static void SetPref(string pref, float val)
     {
         PlayerPrefs.SetFloat(pref, val);
@@ -243,9 +234,9 @@ public class AudioManager : MonoBehaviour
 
     // Mixer & Other
 
-    static void SetPitchByTimeScale()
+    void SetPitchByTimeScale()
     {
-        Instance.masterMixer.SetFloat("SFXPitch", Time.timeScale);
+        masterMixer.SetFloat("SFXPitch", Time.timeScale);
     }
 
     private AudioMixerGroup DefaultMixerGroup()
