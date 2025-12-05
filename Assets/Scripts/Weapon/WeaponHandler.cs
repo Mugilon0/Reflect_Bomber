@@ -119,12 +119,31 @@ public class WeaponHandler : NetworkBehaviour
 
 
 
-        Runner.Spawn(grenadePrefab, aimPoint.position + aimForwardVector * 0.7f, Quaternion.LookRotation(aimForwardVector), Object.InputAuthority, (runner, spawnedGrenade) =>
+        if (GrenadePoolManager.Instance != null)
         {
-            spawnedGrenade.GetComponent<GrenadeHandler>().Throw(throwForce, Object.InputAuthority, networkObject, networkPlayer.nickName.ToString(), GrenadeHandler.EBombType.ShortRange); // aimForwardVector * 15 → throwForce      networkObject added 4/23
-        });
+            Vector3 spawnPosition = aimPoint.position + aimForwardVector * 0.7f;
+            Quaternion spawnRotation = Quaternion.LookRotation(aimForwardVector);
 
+            GrenadePoolManager.Instance.GetFromPool(
+                spawnPosition,
+                spawnRotation,
+                throwForce,
+                Object.InputAuthority,
+                networkObject,
+                networkPlayer.nickName.ToString(),
+                GrenadeHandler.EBombType.ShortRange
+            );
+        }
+        else
+        {
+            // フォールバック: プールがない場合は従来の方法（非推奨）
+            Debug.LogWarning("GrenadePoolManager not found! Using legacy Spawn method.");
 
+            Runner.Spawn(grenadePrefab, aimPoint.position + aimForwardVector * 0.7f, Quaternion.LookRotation(aimForwardVector), Object.InputAuthority, (runner, spawnedGrenade) =>
+            {
+                spawnedGrenade.GetComponent<GrenadeHandler>().Throw(throwForce, Object.InputAuthority, networkObject, networkPlayer.nickName.ToString(), GrenadeHandler.EBombType.ShortRange);
+            });
+        }
 
         // start a new timer to avoid grenade spamming
         //grenadeFireDelay = TickTimer.CreateFromSeconds(Runner, 1.0f);

@@ -27,7 +27,7 @@ public class ScoreCalculator : NetworkBehaviour
         networkPlayer.score++;
 
         RPC_PlayPointGainSound();
-        //RPC_ShowScorePopup(); --11/13
+        RPC_ShowScorePopup(); //11 / 13
     }
 
     /// <summary>
@@ -68,11 +68,11 @@ public class ScoreCalculator : NetworkBehaviour
     }
 
 
-    //[Rpc(RpcSources.StateAuthority, RpcTargets.InputAuthority)]
-    //private void RPC_ShowScorePopup(RpcInfo info = default)
-    //{
-    //    ScorePopupManager.ShowPopup(transform.position, "+1", popupOffset);
-    //}
+    [Rpc(RpcSources.StateAuthority, RpcTargets.InputAuthority)]
+    private void RPC_ShowScorePopup(RpcInfo info = default)
+    {
+        ScorePopupManager.ShowPopup(transform.position, popupOffset);
+    }
 
 
 

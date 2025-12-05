@@ -38,15 +38,35 @@ public class PutWeaponHandler : NetworkBehaviour
 
 
     // Timing 
-    
+
     public void PutBomb()
     {
-        //PutGrenade(input.aimForwardVector);
-
-        Runner.Spawn(grenadePrefab, putPoint.position, putPoint.rotation, Object.InputAuthority, (runner, spawnedGrenade) =>
+        // プールマネージャーを使用
+        if (GrenadePoolManager.Instance != null)
         {
-            spawnedGrenade.GetComponent<GrenadeHandler>().Throw(Vector3.zero, Object.InputAuthority, networkObject, networkPlayer.nickName.ToString(), GrenadeHandler.EBombType.PutRange);
-        });
+            Vector3 spawnPosition = putPoint.position;
+            Quaternion spawnRotation = putPoint.rotation;
+
+            GrenadePoolManager.Instance.GetFromPool(
+                spawnPosition,
+                spawnRotation,
+                Vector3.zero, // 設置型なので投擲力は0
+                Object.InputAuthority,
+                networkObject,
+                networkPlayer.nickName.ToString(),
+                GrenadeHandler.EBombType.PutRange
+            );
+        }
+        else
+        {
+            // フォールバック: プールがない場合は従来の方法（非推奨）
+            Debug.LogWarning("GrenadePoolManager not found! Using legacy Spawn method.");
+
+            Runner.Spawn(grenadePrefab, putPoint.position, putPoint.rotation, Object.InputAuthority, (runner, spawnedGrenade) =>
+            {
+                spawnedGrenade.GetComponent<GrenadeHandler>().Throw(Vector3.zero, Object.InputAuthority, networkObject, networkPlayer.nickName.ToString(), GrenadeHandler.EBombType.PutRange);
+            });
+        }
     }
 
     //void PutGrenade(Vector3 aimForwardVector)

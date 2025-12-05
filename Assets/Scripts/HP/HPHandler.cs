@@ -5,6 +5,8 @@ using Fusion;
 // using UnityEditor.Experimental.GraphView;
 //using UnityEngine.UI;
 
+
+
 public class HPHandler : NetworkBehaviour
 {
     [Networked(OnChanged = nameof(OnHPChanged))]
@@ -13,8 +15,8 @@ public class HPHandler : NetworkBehaviour
     [Networked(OnChanged = nameof(OnStateChanged))]
     public bool isDead { get; set; }
 
-
-
+    [Networked]
+    public TickTimer InvincibilityTimer { get; set; }
 
     bool isInitialized = false; //このスクリプトが初期化されているかを確認
 
@@ -30,7 +32,9 @@ public class HPHandler : NetworkBehaviour
     //    List<FlashMeshRenderer> flashMeshRenderers = new List<FlashMeshRenderer>();
 
     public GameObject playerModel;
-    public GameObject deathGameObjectPrefab;
+    //public GameObject deathGameObjectPrefab;
+    [Header("HP1 Smoke Effect")]
+    [SerializeField] private GameObject blackSmokeParticle;
 
     public bool skipSettingStartValues = false;
 
@@ -39,6 +43,10 @@ public class HPHandler : NetworkBehaviour
     CharacterMovementHandler characterMovementHandler;
     //    NetworkInGameMessages networkInGameMessages;
     //    NetworkPlayer networkPlayer;
+
+
+    private Renderer[] renderers;
+    private bool wasInvincible = false;
 
     private void Awake()
     {
@@ -61,8 +69,35 @@ public class HPHandler : NetworkBehaviour
         defaultMeshBodyColor = bodyMeshRenderer.material.color;
 
         isInitialized = true;
+
+        renderers = GetComponentsInChildren<Renderer>();
     }
 
+    public override void Render()
+    {
+        if (isDead || playerModel == null) return;
+
+        bool isInvincible = !InvincibilityTimer.ExpiredOrNotRunning(Runner);
+
+        if (isInvincible)
+        {
+            bool isVisible = (Time.time % 0.2f) > 0.1f;
+            foreach (var renderer in renderers)
+            {
+                renderer.enabled = isVisible;
+            }
+            wasInvincible = true;
+        }
+        else if (wasInvincible)
+        {
+            // 無敵終了時に一度だけ全表示に戻す
+            foreach (var renderer in renderers)
+            {
+                renderer.enabled = true;
+            }
+            wasInvincible = false;
+        }
+    }
     //    public void ResetMeshRenderers()
     //    {
     //        //Clear old
@@ -113,6 +148,10 @@ public class HPHandler : NetworkBehaviour
     //    //Function only called on the server & used by weaponHandler
     public void OnTakeDamage(NetworkPlayer damageCausedByPlayerNickname, byte damageAmount)
     {
+        if(InvincibilityTimer.ExpiredOrNotRunning(Runner) == false)
+        {
+            return;
+        }
         //if (!Object.HasStateAuthority)
         //    return;
 
@@ -147,6 +186,11 @@ public class HPHandler : NetworkBehaviour
 
             isDead = true;
         }
+        else
+        {
+            InvincibilityTimer = TickTimer.CreateFromSeconds(Runner, 3.0f);
+        }
+
     }
 
     static void OnHPChanged(Changed<HPHandler> changed) // HPがへっている場合のみを扱う
@@ -163,6 +207,8 @@ public class HPHandler : NetworkBehaviour
         //        //Check if the HP has been decreased
         if (newHP < oldHP)
             changed.Behaviour.OnHPReduced();
+
+        changed.Behaviour.UpdateSmokeEffect();
     }
 
     private void OnHPReduced()
@@ -172,6 +218,20 @@ public class HPHandler : NetworkBehaviour
 
         StartCoroutine(OnHitCO());
     }
+
+    private void UpdateSmokeEffect()
+    {
+        if (blackSmokeParticle == null) return;
+        if (isDead || HP > 1)
+        {
+            blackSmokeParticle.SetActive(false);
+        }
+        else if (HP <= 1)
+        {
+            blackSmokeParticle.SetActive(true);
+        }
+    }
+
 
     static void OnStateChanged(Changed<HPHandler> changed)
     {
@@ -206,7 +266,12 @@ public class HPHandler : NetworkBehaviour
         hitboxRoot.HitboxRootActive = false; // 死んだプレイヤーに続けて攻撃できないようにする
         characterMovementHandler.SetCharacterControllerEnabled(false);
 
-        Instantiate(deathGameObjectPrefab, transform.position, Quaternion.identity);
+        if (EffectPoolManager.Instance != null)
+        {
+            // Deathパーティクル
+            EffectPoolManager.Instance.Play(EffectPoolManager.EffectType.Death, transform.position);
+            EffectPoolManager.Instance.Play(EffectPoolManager.EffectType.Death2, transform.position);
+        }
     }
 
     private void OnRevive()
@@ -226,6 +291,10 @@ public class HPHandler : NetworkBehaviour
         //Reset variables
         HP = startingHP;
         isDead = false;
+
+        InvincibilityTimer = TickTimer.None;
+
+        UpdateSmokeEffect();
     }
 
 

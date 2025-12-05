@@ -9,6 +9,7 @@ public class LocalCameraHandler : MonoBehaviour
     //public Transform cameraAnchorPoint;
     public Camera localCamera;
 
+    private CameraObstructionHandler cameraObstructionHandler;
 
     // Input
     //Vector2 viewInput;
@@ -26,6 +27,12 @@ public class LocalCameraHandler : MonoBehaviour
         localCamera = GetComponent<Camera>();
         networkCharacterControllerPrototypeCustom = GetComponentInParent<NetworkCharacterControllerPrototypeCustom>();
         //cinemachineVirtualCamera = FindObjectOfType<CinemachineVirtualCamera>();
+
+        cameraObstructionHandler = GetComponent<CameraObstructionHandler>();
+        if (cameraObstructionHandler == null)
+        {
+            cameraObstructionHandler = gameObject.AddComponent<CameraObstructionHandler>();
+        }
     }
     // Start is called before the first frame update
     //void Start()
@@ -64,6 +71,8 @@ public class LocalCameraHandler : MonoBehaviour
         }
 
 
+        HandleWallTransparency();
+
         // FPS
 
         //else 
@@ -80,6 +89,19 @@ public class LocalCameraHandler : MonoBehaviour
         //}
     }
 
+    private void HandleWallTransparency()
+    {
+        if (NetworkPlayer.Local == null || NetworkPlayer.Local.playerModel == null)
+            return;
+
+        if (cameraObstructionHandler != null)
+        {
+            Vector3 cameraPos = transform.position;
+            Vector3 playerPos = NetworkPlayer.Local.playerModel.position;
+
+            cameraObstructionHandler.HandleObstructions(cameraPos, playerPos);
+        }
+    }
 
     // ˆÈ‰ºŽå‚ÉFPSŽÀ‘•
 
