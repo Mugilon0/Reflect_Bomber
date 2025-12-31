@@ -12,6 +12,7 @@ public class InterfaceManager : MonoBehaviour
     public UIScreen loadingUI;
     public UIScreen battleCountdownUI;
     public UIScreen inGameUIScreen;
+    public UIScreen resultUIScreen;
 
 
     [SerializeField] internal TMPro.TMP_InputField readyMessageInputField;

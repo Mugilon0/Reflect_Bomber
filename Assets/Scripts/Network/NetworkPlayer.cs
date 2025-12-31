@@ -25,6 +25,20 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 
     [Networked(OnChanged = nameof(OnScoreChanged))]
     public int score { get; set; } = 0;
+
+    [Networked, Capacity(4)]
+    public NetworkArray<int> RoundScores { get; }
+    public int TotalScore
+    {
+        get
+        {
+            int total = 0;
+            for (int i = 0; i < RoundScores.Length; i++)
+                total += RoundScores[i];
+            return total;
+        }
+    }
+
     [Networked]
     public NetworkBool IsLoaded { get; set; } //
 
@@ -44,11 +58,123 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
     //{
 
     //}
+    private CharacterOutfitHandler _outfitHandler;
+    private CharacterMovementHandler _movementHandler;
+    private WeaponManager _weaponManager;
+    private PlayerAnimationHandler _animationHandler;
+    private HPHandler _hpHandler;
+
+
+
+
     private void Awake()
     {
         // このオブジェクトがシーン遷移で破棄されないようにする
         DontDestroyOnLoad(this.gameObject);
     }
+
+    // component初期化用
+    public CharacterOutfitHandler OutfitHandler
+    {
+        get
+        {
+            if (_outfitHandler == null)
+                _outfitHandler = GetComponent<CharacterOutfitHandler>();
+            return _outfitHandler;
+        }
+    }
+
+    public CharacterMovementHandler MovementHandler
+    {
+        get
+        {
+            if (_movementHandler == null)
+                _movementHandler = GetComponent<CharacterMovementHandler>();
+            return _movementHandler;
+        }
+    }
+
+    public WeaponManager WeaponManager
+    {
+        get
+        {
+            if (_weaponManager == null)
+                _weaponManager = GetComponent<WeaponManager>();
+            return _weaponManager;
+        }
+    }
+
+    public PlayerAnimationHandler AnimationHandler
+    {
+        get
+        {
+            if (_animationHandler == null)
+                _animationHandler = GetComponent<PlayerAnimationHandler>();
+            return _animationHandler;
+        }
+    }
+
+    public HPHandler HPHandler
+    {
+        get
+        {
+            if (_hpHandler == null)
+                _hpHandler = GetComponent<HPHandler>();
+            return _hpHandler;
+        }
+    }
+
+
+
+    public bool IsReady => OutfitHandler?.isDoneWithCharacterSelection ?? false;
+    public bool IsDead => HPHandler?.isDead ?? false;
+
+
+    public void LockAllActions(float duration)
+    {
+        if (MovementHandler != null)
+            MovementHandler.MoveLockTimer = TickTimer.CreateFromSeconds(Runner, duration);
+
+        if (WeaponManager != null)
+            WeaponManager.LockWeapons(duration);
+
+        if (AnimationHandler != null)
+            AnimationHandler.AnimationLockTimer = TickTimer.CreateFromSeconds(Runner, duration);
+    }
+    public void UnlockAllActions()
+    {
+        if (MovementHandler != null)
+            MovementHandler.MoveLockTimer = TickTimer.None;
+
+        if (WeaponManager != null)
+            WeaponManager.LockWeapons(0f);
+
+        if (AnimationHandler != null)
+            AnimationHandler.AnimationLockTimer = TickTimer.None;
+    }
+
+    /// <summary>
+    /// ゲームプレイデータをクリア（ラウンド終了時など）
+    /// 
+    /// 使用例：
+    /// PlayerRegistry.ForEach(p => p.ClearGameplayData());
+    /// </summary>
+    public void ClearGameplayData()
+    {
+        score = 0;
+        IsLoaded = false;
+
+        for (int i = 0; i < RoundScores.Length; i++)
+            RoundScores.Set(i, 0);
+
+        if (HPHandler != null)
+            HPHandler.OnRespawned();
+    }
+
+
+
+
+
 
     public override void Spawned() //プレイヤーが生成された場合に呼び出される
     {

@@ -6,7 +6,7 @@ using Fusion;
 public class LongWeaponHandler : NetworkBehaviour
 {
     //[Networked]
-    //public TickTimer FireLockTimer { get; set; } // 攻撃ロック用のタイマー　added 6/27
+    //public TickTimer FireLockTimer { get; set; } // 攻撃ロック用のタイマー added 6/27
     //public bool CanFire => FireLockTimer.ExpiredOrNotRunning(Runner); // タイマーが動いていない時だけtrue
 
 
@@ -26,13 +26,14 @@ public class LongWeaponHandler : NetworkBehaviour
     //public bool isFireing { get; set; }
 
 
-
-    //追加 4/17
     [Header("throwAngle")]
     public float throwAngle = 30f;
 
-    [Header("throwPower")]
-    public float throwPower = 15f;
+    [Header("throwPower - Charge Settings")]
+    public float minThrowPower = 30f;   // 最小パワー（0.3秒チャージ時）
+    public float maxThrowPower = 45f;   // 最大パワー（最大チャージ時）
+    public float minChargeTime = 0.3f;  // LongBomb判定の閾値（CharacterInputHandlerと同じ値）
+    public float maxChargeTime = 1.3f;  // 最大チャージ時間（これ以上溜めても45のまま）
 
     // プレイヤーの慣性の強さ
     public float inertiaFactor = 0.5f;
@@ -79,15 +80,15 @@ public class LongWeaponHandler : NetworkBehaviour
 
     public void LongFire(NetworkInputData input)
     {
-        // サーバーからの入力情報の中に、長距離ボムの発射命令があった場合のみ処理
-        //if (CanFire && input.isLongThrow)
-        //{
-        // 現時点では、溜め時間などは無視して、とりあえず発射する
-        FireLongGrenade(input.aimForwardVector);
-        //}
+        // チャージ時間からパワーを計算
+        // 0.3秒 → 30, 1.3秒以上 → 45
+        float chargeRatio = Mathf.InverseLerp(minChargeTime, maxChargeTime, input.longThrowCharge);
+        float power = Mathf.Lerp(minThrowPower, maxThrowPower, chargeRatio);
+
+        FireLongGrenade(input.aimForwardVector, power);
     }
 
-    void FireLongGrenade(Vector3 aimForwardVector)
+    void FireLongGrenade(Vector3 aimForwardVector, float throwPowerValue)
     {
         //if (grenadeFireDelay.ExpiredOrNotRunning(Runner))
         //{
@@ -107,7 +108,7 @@ public class LongWeaponHandler : NetworkBehaviour
         // プレイヤーの慣性を追加する
         Vector3 playerVelocity = networkCharacterController.Velocity;
         //Vector3 angleDirection = Quaternion.AngleAxis(-throwAngle, Vector3.right) * forwardDirection;
-        Vector3 throwForce = (angleDirection * throwPower) + (playerVelocity * inertiaFactor);
+        Vector3 throwForce = (angleDirection * throwPowerValue) + (playerVelocity * inertiaFactor);
 
 
 

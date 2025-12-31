@@ -12,7 +12,7 @@ public class RoundManager : NetworkBehaviour, INetworkRunnerCallbacks
 {
     //[Networked] // (OnChanged = nameof(OnSessionConfigChanged))‚Í‚¢‚Á‚½‚ñ–³‹@ƒQ[ƒ€ŠÔ‚Ì‘I‘ğˆ
     //public int MaxTimeIndex { get; set; }
-    public static float MaxTime => 120.0f;
+    public static float MaxTime => 9990.0f; //120.0f;
 
     [Networked]
     public int CurrentLevel { get; set; }

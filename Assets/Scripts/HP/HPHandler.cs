@@ -11,6 +11,7 @@ public class HPHandler : NetworkBehaviour
 {
     [Networked(OnChanged = nameof(OnHPChanged))]
     byte HP { get; set; }
+    public byte CurrentHP => HP; // ライフアイコン用
 
     [Networked(OnChanged = nameof(OnStateChanged))]
     public bool isDead { get; set; }
@@ -41,6 +42,7 @@ public class HPHandler : NetworkBehaviour
     //    //Other components
     HitboxRoot hitboxRoot;
     CharacterMovementHandler characterMovementHandler;
+    private PlayerAnimationHandler playerAnimationHandler;
     //    NetworkInGameMessages networkInGameMessages;
     //    NetworkPlayer networkPlayer;
 
@@ -52,6 +54,7 @@ public class HPHandler : NetworkBehaviour
     {
         characterMovementHandler = GetComponent<CharacterMovementHandler>();
         hitboxRoot = GetComponentInChildren<HitboxRoot>();
+        playerAnimationHandler = GetComponent<PlayerAnimationHandler>();
         //networkInGameMessages = GetComponent<NetworkInGameMessages>();
         //networkPlayer = GetComponent<NetworkPlayer>();
     }
@@ -216,7 +219,11 @@ public class HPHandler : NetworkBehaviour
         if (!isInitialized)
             return;
 
+
+        Debug.Log("[HP] OnHPReduced called!");  // ← 追加
         StartCoroutine(OnHitCO());
+
+        playerAnimationHandler?.TriggerGetDamage(0.8f);
     }
 
     private void UpdateSmokeEffect()

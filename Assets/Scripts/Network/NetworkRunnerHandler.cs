@@ -167,7 +167,7 @@ public class NetworkRunnerHandler : MonoBehaviour
                 });
             }
         }
-        StartCoroutine(CleanUpHostMigrationCO());
+        //StartCoroutine(CleanUpHostMigrationCO()); // ‚¢‚Á‚½‚ñ’âŽ~ 12/20
 
         Debug.Log($"HostMigrationResume completed");
     }

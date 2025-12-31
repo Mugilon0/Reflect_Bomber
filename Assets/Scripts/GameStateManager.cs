@@ -204,6 +204,12 @@ public class GameStateManager : NetworkBehaviour
                             weaponManager.LockWeapons(7.0f);
                         }
 
+                        var animHandler = playerEntry.Value.GetComponent<PlayerAnimationHandler>();
+                        if (animHandler != null)
+                        {
+                            animHandler.AnimationLockTimer = TickTimer.CreateFromSeconds(Runner, 7.0f);
+                        }
+
 
                     }
                 }
@@ -396,7 +402,7 @@ public class GameStateManager : NetworkBehaviour
             //}
             float remainingTime = RoundManager.MaxTime - RoundManager.Time;
 
-            // 2. 0秒未満にならないように値を保証する
+            // 0秒未満にならないように値を保証する
             float displayTime = Mathf.Max(0f, remainingTime);
 
             // 3. 残り時間をHUDに渡して表示を更新する
@@ -409,13 +415,43 @@ public class GameStateManager : NetworkBehaviour
                 // 時間切れになった時の処理をここに書く
                 Debug.Log("ラウンド終了です！！");
 
-                // 例：ゲームを終了ステートに移行させる
-                // Server_SetState(EGameState.Outro);
+                PlayerRegistry.ForEach(p => p.LockAllActions(999.0f));
+
+                // 例：タイムアップしたらゲームを終了ステートに移行させる
+                Server_SetState(EGameState.Outro);
             }
         };
 
-            StateMachine[EGameState.Game].onExit = next => { Debug.Log("Exiting Game"); Cursor.lockState = CursorLockMode.None; Cursor.visible = true; };
-            StateMachine[EGameState.Outro].onEnter = prev => { Debug.Log("Entering Outro"); if (Runner.IsServer) Server_DelaySetState(EGameState.PostGame, 5f); };
+
+        StateMachine[EGameState.Game].onExit = next => { Debug.Log("Exiting Game"); Cursor.lockState = CursorLockMode.None; Cursor.visible = true; };
+
+        StateMachine[EGameState.Outro].onEnter = prev => 
+        { 
+            
+            Debug.Log("Entering Outro");
+
+            int currentRound = RoundManager.Instance.CurrentLevel;
+
+            if (Runner.IsServer)
+            {
+                RoundResultCalculator.Server_FinalizeRoundScores(currentRound);
+            }
+
+            UIScreen.Focus(InterfaceManager.Instance.resultUIScreen);
+
+
+            // 必要かわからない
+            if (Runner.IsServer)
+            {   
+                Server_DelaySetState(EGameState.PostGame, 5f);
+            }
+
+
+
+
+                
+        };
+
             StateMachine[EGameState.Outro].onExit = next => { Debug.Log("Exiting Outro"); };
             StateMachine[EGameState.PostGame].onEnter = prev => { Debug.Log("Entering PostGame"); /* 再戦か退出かのUI表示 */ if (Runner.IsServer) Server_DelaySetState(EGameState.Ready, 10f); /* 仮で10秒後Readyへ */};
             StateMachine[EGameState.PostGame].onExit = next => { Debug.Log("Exiting PostGame"); };
@@ -535,3 +571,41 @@ public class GameStateManager : NetworkBehaviour
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+//foreach (var playerEntry in NetworkPlayer.ActivePlayers)
+//{
+//    if (playerEntry.Value != null)
+//    {
+//        // 移動ロック（無期限または長時間）
+//        var moveHandler = playerEntry.Value.GetComponent<CharacterMovementHandler>();
+//        if (moveHandler != null)
+//        {
+//            moveHandler.MoveLockTimer = TickTimer.CreateFromSeconds(Runner, 999.0f); // 実質無期限
+//        }
+
+
+//        // または WeaponManager を使う場合
+//        var weaponManager = playerEntry.Value.GetComponent<WeaponManager>();
+//        if (weaponManager != null)
+//        {
+//            weaponManager.LockWeapons(999.0f);
+//        }
+
+//        var animHandler = playerEntry.Value.GetComponent<PlayerAnimationHandler>();
+//        if (animHandler != null)
+//        {
+//            animHandler.AnimationLockTimer = TickTimer.CreateFromSeconds(Runner, 999.0f);
+//        }
+//    }
+//}

@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -7,109 +7,295 @@ using Fusion;
 [OrderAfter(typeof(NetworkCharacterControllerPrototypeCustom))]
 public class PlayerAnimationHandler : NetworkBehaviour
 {
-    // •K—v‚ÈƒRƒ“ƒ|[ƒlƒ“ƒg‚Ö‚ÌQÆ
+    // ============================================================
+    // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã®ãƒãƒƒã‚·ãƒ¥ï¼ˆãƒ‘ãƒ•ã‚©ãƒ¼ãƒãƒ³ã‚¹æœ€é©åŒ–ï¼‰
+    // æ–°ã—ã„ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã‚’è¿½åŠ ã™ã‚‹å ´åˆã¯ã“ã“ã«è¿½åŠ 
+    // ============================================================
+    private static class AnimParams
+    {
+        // Float
+        public static readonly int Speed = Animator.StringToHash("Speed");
+        public static readonly int Turn = Animator.StringToHash("Turn");
+
+        // Bool
+        public static readonly int IsCharging = Animator.StringToHash("IsCharging");
+        public static readonly int IsDead = Animator.StringToHash("IsDead");
+
+        // Trigger
+        public static readonly int Throw = Animator.StringToHash("Throw");
+        public static readonly int GetDamage = Animator.StringToHash("GetDamage");
+    }
+
+    // ============================================================
+    // ã‚·ãƒ¼ãƒ³åã®å®šæ•°ï¼ˆãƒãƒ¼ãƒ‰ã‚³ãƒ¼ãƒ‰å›é¿ï¼‰
+    // ============================================================
+    private static class SceneNames
+    {
+        public const string Ready = "Ready";
+        public const string Lobby = "Lobby";
+    }
+
+    // ============================================================
+    // ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆå‚ç…§
+    // ============================================================
     [Header("Animation Settings")]
     [SerializeField] private Animator animator;
+
+    [Header("Turn Animation Settings")]
+    [SerializeField]
+    [Tooltip("å›è»¢ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ã®æ„Ÿåº¦ã€‚ã“ã®å€¤ã§AngularVelocityYã‚’å‰²ã£ã¦-1ã€œ1ã«æ­£è¦åŒ–")]
+    private float turnAnimationSensitivity = 100f;
+
+    [SerializeField]
+    [Tooltip("Turnãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã®ã‚¹ãƒ ãƒ¼ã‚¸ãƒ³ã‚°é€Ÿåº¦")]
+    private float turnSmoothSpeed = 10f;
+
+    // ã‚³ãƒ³ãƒãƒ¼ãƒãƒ³ãƒˆã‚­ãƒ£ãƒƒã‚·ãƒ¥
     private NetworkCharacterControllerPrototypeCustom ncc;
     private HPHandler hpHandler;
+    private CharacterMovementHandler movementHandler;
+    private WeaponManager weaponManager;
 
-    // ƒlƒbƒgƒ[ƒN“¯Šú‚³‚ê‚éƒvƒƒpƒeƒB
+    // ã‚·ãƒ¼ãƒ³åã‚­ãƒ£ãƒƒã‚·ãƒ¥
+    private string cachedSceneName;
+    private bool isReadyScene;
+
+    // Turnãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã®ã‚¹ãƒ ãƒ¼ã‚¸ãƒ³ã‚°ç”¨
+    private float currentTurnValue;
+
+    // ============================================================
+    // ãƒãƒƒãƒˆãƒ¯ãƒ¼ã‚¯åŒæœŸãƒ—ãƒ­ãƒ‘ãƒ†ã‚£
+    // ============================================================
     [Networked]
     private NetworkBool IsCharging { get; set; }
 
     [Networked(OnChanged = nameof(OnThrowStateChanged))]
     private NetworkBool DidThrow { get; set; }
 
-    // MONOBEHAVIOUR
+    [Networked]
+    public TickTimer AnimationLockTimer { get; set; }
 
-    void Start()
-    {
-        // ƒQ[ƒ€‚ªŠJn‚³‚ê‚½’¼ŒãA‚Ü‚½‚ÍƒIƒuƒWƒFƒNƒg‚ª—LŒø‚É‚È‚Á‚½’¼Œã‚ÉŒÄ‚Î‚ê‚é
-        if (animator == null)
-        {
-            Debug.LogError($"[ANIMATION DEBUG] Start: Animator is NULL on {gameObject.name}. Prefab assignment might be missing!", gameObject);
-        }
-        else
-        {
-            Debug.Log($"[ANIMATION DEBUG] Start: Animator is assigned on {gameObject.name}.", gameObject);
-        }
-    }
+    public bool CanPlayAnimation => AnimationLockTimer.ExpiredOrNotRunning(Runner);
 
-
+    // ============================================================
+    // åˆæœŸåŒ–
+    // ============================================================
     private void Awake()
     {
-        //animator = GetComponentInChildren<Animator>();
         ncc = GetComponent<NetworkCharacterControllerPrototypeCustom>();
         hpHandler = GetComponent<HPHandler>();
+        movementHandler = GetComponent<CharacterMovementHandler>();
+        weaponManager = GetComponent<WeaponManager>();
+        CacheSceneName();
     }
 
-    // NetworkBehaviour INTERFACE
+    private void Start()
+    {
+        ValidateAnimator();
+    }
 
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        CacheSceneName();
+    }
+
+    private void CacheSceneName()
+    {
+        cachedSceneName = SceneManager.GetActiveScene().name;
+        isReadyScene = (cachedSceneName == SceneNames.Ready);
+    }
+
+    private void ValidateAnimator()
+    {
+        if (animator == null)
+        {
+            Debug.LogError($"[PlayerAnimationHandler] Animator is NULL on {gameObject.name}. Check prefab assignment!", gameObject);
+        }
+    }
+
+    // ============================================================
+    // ãƒãƒƒãƒˆãƒ¯ãƒ¼ã‚¯æ›´æ–°
+    // ============================================================
     public override void FixedUpdateNetwork()
     {
-        // “ü—ÍŒ ŒÀ‚ª‚ ‚éƒvƒŒƒCƒ„[i©•ª©gj‚Ì“ü—Í‚ğæ“¾‚µA[Networked]ƒvƒƒpƒeƒB‚ğXV
         if (GetInput(out NetworkInputData input))
         {
             IsCharging = input.IsCharging;
 
-            // “Š‚°‚é“ü—Í‚ª‚ ‚Á‚½ê‡ADidThrowƒvƒƒpƒeƒB‚ğ”½“]‚³‚¹‚ÄOnChangedƒR[ƒ‹ƒoƒbƒN‚ğ‹N“®
             if (input.isShortThrow || input.isLongThrow)
             {
                 DidThrow = !DidThrow;
             }
         }
 
-        // Animator‚ÌIsDeadƒpƒ‰ƒ[ƒ^‚ğHPHandler‚Ìó‘Ô‚Æ“¯Šú
-        if (hpHandler != null)
+        if (hpHandler != null && animator != null)
         {
-            animator.SetBool("IsDead", hpHandler.isDead);
+            animator.SetBool(AnimParams.IsDead, hpHandler.isDead);
         }
     }
 
+    // ============================================================
+    // ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°æ›´æ–°ï¼ˆãƒ“ã‚¸ãƒ¥ã‚¢ãƒ«åŒæœŸï¼‰
+    // ============================================================
     public override void Render()
     {
-        // Renderƒƒ\ƒbƒh‚ÌÅ‰‚Éƒ`ƒFƒbƒN‚ğ’Ç‰Á
-        if (animator == null)
-        {
-            Debug.LogError("Animator‚ª‚ ‚è‚Ü‚¹‚ñII");
-            // ‚à‚µQÆ‚ª¸‚í‚ê‚Ä‚¢‚½‚çAÄ“xæ“¾‚ğ‚İ‚é
-            animator = GetComponentInChildren<Animator>();
+        if (!ValidateAnimatorForRender()) return;
 
-            // ‚»‚ê‚Å‚àŒ©‚Â‚©‚ç‚È‚¯‚ê‚ÎAƒGƒ‰[‚ğ–h‚®‚½‚ß‚Éˆ—‚ğ’†’f‚·‚é
-            if (animator == null)
-            {
-                Debug.LogError("Animator component could not be found on this object or its children!", gameObject);
-                return;
-            }
-        }
-        // --- ƒV[ƒ“‚É‰‚¶‚½ƒAƒjƒ[ƒVƒ‡ƒ“§Œä ---
-        string currentScene = SceneManager.GetActiveScene().name;
-
-        if (currentScene == "Ready")
+        if (isReadyScene)
         {
-            // ReadyƒV[ƒ“‚Å‚Íí‚ÉSpeed‚ğ0‚É‚µ‚ÄIdleƒAƒjƒ[ƒVƒ‡ƒ“‚É‚·‚é
-            animator.SetFloat("Speed", 0);
+            SetIdleState();
             return;
         }
 
-        // --- ƒoƒgƒ‹ƒV[ƒ“‚Å‚ÌƒAƒjƒ[ƒVƒ‡ƒ“§Œä ---
+        if (!CanPlayAnimation)
+        {
+            SetLockedState();
+            return;
+        }
 
-        // Speedƒpƒ‰ƒ[ƒ^‚ÌXV
-        Vector3 horizontalVelocity = ncc.Velocity;
-        horizontalVelocity.y = 0;
-        animator.SetFloat("Speed", horizontalVelocity.magnitude);
-
-        // IsChargingƒpƒ‰ƒ[ƒ^‚ÌXV
-        animator.SetBool("IsCharging", IsCharging);
+        UpdateMovementAnimation();
+        // UpdateTurnAnimation();  // ã‚³ãƒ¡ãƒ³ãƒˆã‚¢ã‚¦ãƒˆä¸­
+        UpdateChargingAnimation();
     }
 
-    // DidThrowƒvƒƒpƒeƒB‚ª•ÏX‚³‚ê‚½‚Æ‚«‚É‘SƒNƒ‰ƒCƒAƒ“ƒg‚ÅŒÄ‚Î‚ê‚é
-    static void OnThrowStateChanged(Changed<PlayerAnimationHandler> changed)
+    // ============================================================
+    // ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³åˆ¶å¾¡ãƒ¡ã‚½ãƒƒãƒ‰
+    // ============================================================
+
+    private void SetIdleState()
     {
-        // €–S‚µ‚Ä‚¢‚È‚¯‚ê‚ÎAThrowƒgƒŠƒK[‚ğˆø‚­
-        if (changed.Behaviour.hpHandler != null && !changed.Behaviour.hpHandler.isDead)
+        animator.SetFloat(AnimParams.Speed, 0f);
+        animator.SetFloat(AnimParams.Turn, 0f);
+    }
+
+    private void SetLockedState()
+    {
+        animator.SetFloat(AnimParams.Speed, 0f);
+        animator.SetFloat(AnimParams.Turn, 0f);
+        animator.SetBool(AnimParams.IsCharging, false);
+    }
+
+    private void UpdateMovementAnimation()
+    {
+        if (ncc == null) return;
+
+        Vector3 horizontalVelocity = ncc.Velocity;
+        horizontalVelocity.y = 0;
+        animator.SetFloat(AnimParams.Speed, horizontalVelocity.magnitude);
+    }
+
+    private void UpdateTurnAnimation()
+    {
+        if (ncc == null) return;
+
+        float targetTurn = Mathf.Clamp(ncc.AngularVelocityY / turnAnimationSensitivity, -1f, 1f);
+        currentTurnValue = Mathf.Lerp(currentTurnValue, targetTurn, Time.deltaTime * turnSmoothSpeed);
+        animator.SetFloat(AnimParams.Turn, currentTurnValue);
+    }
+
+    private void UpdateChargingAnimation()
+    {
+        animator.SetBool(AnimParams.IsCharging, IsCharging);
+    }
+
+    // ============================================================
+    // ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ãƒ­ãƒƒã‚¯ï¼ˆç§»å‹•ãƒ»æ”»æ’ƒã‚’ç„¡åŠ¹åŒ–ï¼‰
+    // ä»Šå¾Œè¿½åŠ ã™ã‚‹ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ã§ã‚‚ä½¿ã„å›ã›ã‚‹æ±ç”¨ãƒ¡ã‚½ãƒƒãƒ‰
+    // ============================================================
+
+    /// <summary>
+    /// ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³å†ç”Ÿä¸­ã®ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ã‚’ãƒ­ãƒƒã‚¯ã™ã‚‹
+    /// </summary>
+    /// <param name="duration">ãƒ­ãƒƒã‚¯æ™‚é–“ï¼ˆç§’ï¼‰</param>
+    /// <param name="lockMovement">ç§»å‹•ã‚’ãƒ­ãƒƒã‚¯ã™ã‚‹ã‹</param>
+    /// <param name="lockWeapon">æ”»æ’ƒã‚’ãƒ­ãƒƒã‚¯ã™ã‚‹ã‹</param>
+    /// <param name="lockAnimation">ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³æ›´æ–°ã‚’ãƒ­ãƒƒã‚¯ã™ã‚‹ã‹</param>
+    public void LockActions(float duration, bool lockMovement = true, bool lockWeapon = true, bool lockAnimation = true)
+    {
+        if (!Object.HasStateAuthority) return;
+
+        if (lockMovement && movementHandler != null)
         {
-            changed.Behaviour.animator.SetTrigger("Throw");
+            movementHandler.MoveLockTimer = TickTimer.CreateFromSeconds(Runner, duration);
         }
+
+        if (lockWeapon && weaponManager != null)
+        {
+            weaponManager.LockWeapons(duration);
+        }
+
+        if (lockAnimation)
+        {
+            AnimationLockTimer = TickTimer.CreateFromSeconds(Runner, duration);
+        }
+    }
+
+    // ============================================================
+    // å¤–éƒ¨ã‹ã‚‰å‘¼ã³å‡ºã™ãƒˆãƒªã‚¬ãƒ¼ãƒ¡ã‚½ãƒƒãƒ‰
+    // ============================================================
+
+    public void TriggerThrow()
+    {
+        if (animator != null && (hpHandler == null || !hpHandler.isDead))
+        {
+            animator.SetTrigger(AnimParams.Throw);
+        }
+    }
+
+    /// <summary>
+    /// è¢«å¼¾ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ã‚’ãƒˆãƒªã‚¬ãƒ¼ï¼ˆHPHandlerã‹ã‚‰å‘¼ã³å‡ºã•ã‚Œã‚‹ï¼‰
+    /// </summary>
+    /// <param name="lockDuration">ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ãƒ­ãƒƒã‚¯æ™‚é–“ï¼ˆç§’ï¼‰ã€‚0ä»¥ä¸‹ã§ç„¡åŠ¹</param>
+    public void TriggerGetDamage(float lockDuration = 0.5f)
+    {
+        if (animator != null && (hpHandler == null || !hpHandler.isDead))
+        {
+            animator.SetTrigger(AnimParams.GetDamage);
+
+            // ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ãƒ­ãƒƒã‚¯
+            if (lockDuration > 0f)
+            {
+                LockActions(lockDuration, lockMovement: true, lockWeapon: true, lockAnimation: false);
+            }
+        }
+    }
+
+    // ============================================================
+    // ã‚³ãƒ¼ãƒ«ãƒãƒƒã‚¯
+    // ============================================================
+
+    private static void OnThrowStateChanged(Changed<PlayerAnimationHandler> changed)
+    {
+        changed.Behaviour.TriggerThrow();
+    }
+
+    // ============================================================
+    // ãƒ¦ãƒ¼ãƒ†ã‚£ãƒªãƒ†ã‚£
+    // ============================================================
+
+    private bool ValidateAnimatorForRender()
+    {
+        if (animator != null) return true;
+
+        animator = GetComponentInChildren<Animator>();
+
+        if (animator == null)
+        {
+            Debug.LogError($"[PlayerAnimationHandler] Animator not found on {gameObject.name}. Disabling animation handler.", gameObject);
+            enabled = false;
+            return false;
+        }
+
+        return true;
     }
 }

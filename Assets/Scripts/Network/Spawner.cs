@@ -217,6 +217,7 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
     public async void OnHostMigration(NetworkRunner runner, HostMigrationToken hostMigrationToken)
     {
         Debug.Log("OnHostMigration");
+        return; // Ç¢Ç¡ÇΩÇÒHost MigrationÇÕí‚é~ 12/20
 
         // shut down the current runner
         await runner.Shutdown(shutdownReason: ShutdownReason.HostMigration);
@@ -232,6 +233,7 @@ public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
     public void OnHostMigrationCleanUp() //Å@è¡Ç¶ÇΩplayerÇÇØÇ∑
     {
         Debug.Log("Spawner OnHostMigrationCleanUp started");
+        return; // Ç¢Ç¡ÇΩÇÒHost MigrationÇÕí‚é~ 12/20
 
         foreach (KeyValuePair<int, NetworkPlayer> entry in mapTokenIDWithNetworkPlayer)
         {
