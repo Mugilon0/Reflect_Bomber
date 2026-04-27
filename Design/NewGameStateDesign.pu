@@ -1,0 +1,117 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+enum EGameStateNet {
+  Off
+  Lobby
+  Ready
+  Loading
+  Intro
+  Game
+  Outro
+  Postgame
+}
+
+interface IGameState {
+  +NetState : EGameStateNet
+  +OnEnter(prev : IGameState)
+  +OnExit(next : IGameState)
+  +OnUpdate()
+  +IsComplete() : bool
+}
+
+interface IGameFlowStrategy {
+  +DecideNext(current : EGameStateNet, previous : EGameStateNet) : EGameStateNet
+}
+
+note right of IGameFlowStrategy
+  previousを受け取ることで
+  Loading後の遷移先を判断できる
+  例:
+  current=Loading, previous=Lobby  → Ready
+  current=Loading, previous=Ready  → Intro
+  current=Loading, previous=Outro  → Intro or PostGame
+  current=Loading, previous=PostGame → Lobby
+end note
+
+class StateMachine {
+  -current : IGameState
+  -flow : IGameFlowStrategy
+
+  +Initialize(initial : IGameState)
+  +Update()
+  +ChangeState(next : IGameState)
+}
+
+class GameStateManager <<NetworkBehaviour>> {
+  -stateMachine : StateMachine
+  -states : Dictionary<EGameStateNet, IGameState>
+  -flowStrategy : IGameFlowStrategy
+
+  +Current : EGameStateNet    [Networked]
+  +Previous : EGameStateNet
+
+  +Spawned()
+  +FixedUpdateNetwork()
+  +Server_SetState(state : EGameStateNet)
+}
+
+class OnlineRoundFlow {
+  -maxRounds : int
+  -currentRound : int
+  +OnlineRoundFlow(maxRounds : int)
+  +DecideNext(current, previous) : EGameStateNet
+}
+
+note right of OnlineRoundFlow
+  デフォルト4ラウンド
+  セッション作成時にmaxRoundsを注入
+  Outro後: currentRound < maxRounds
+    → Loading(→Intro)
+  Outro後: currentRound >= maxRounds
+    → PostGame
+end note
+
+class SingleRoundFlow
+class LobbyState
+class ReadyState
+class LoadingState
+class IntroState
+class GamePlayState
+class OutroState
+class PostgameState
+
+IGameState <|.. LobbyState
+IGameState <|.. ReadyState
+IGameState <|.. LoadingState
+IGameState <|.. IntroState
+IGameState <|.. GamePlayState
+IGameState <|.. OutroState
+IGameState <|.. PostgameState
+
+IGameFlowStrategy <|.. OnlineRoundFlow
+IGameFlowStrategy <|.. SingleRoundFlow
+
+GameStateManager *-- StateMachine      : owns
+GameStateManager *-- IGameFlowStrategy : owns
+StateMachine     ..> IGameFlowStrategy : uses
+StateMachine     ..> IGameState        : depends on
+IGameState       --> EGameStateNet     : has value
+@enduml
+```
+
+---
+
+## `OnlineRoundFlow.DecideNext()`の動き（具体例）
+```
+DecideNext(Lobby,    _)        → Loading
+DecideNext(Loading,  Lobby)    → Ready
+DecideNext(Ready,    _)        → Loading
+DecideNext(Loading,  Ready)    → Intro
+DecideNext(Intro,    _)        → Game
+DecideNext(Game,     _)        → Outro
+DecideNext(Outro,    _)        → Loading   ※ラウンド未終了
+                               → PostGame  ※全ラウンド終了
+DecideNext(Loading,  Outro)    → Intro
+DecideNext(PostGame, _)        → Loading
+DecideNext(Loading,  PostGame) → Lobby

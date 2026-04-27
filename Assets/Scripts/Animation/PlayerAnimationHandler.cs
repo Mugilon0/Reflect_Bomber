@@ -74,8 +74,10 @@ public class PlayerAnimationHandler : NetworkBehaviour
 
     [Networked]
     public TickTimer AnimationLockTimer { get; set; }
+    [Networked]
+    public NetworkBool IsLocked { get; set; }
 
-    public bool CanPlayAnimation => AnimationLockTimer.ExpiredOrNotRunning(Runner);
+    public bool CanPlayAnimation => !IsLocked && AnimationLockTimer.ExpiredOrNotRunning(Runner);
 
     // ============================================================
     // 初期化
@@ -256,7 +258,7 @@ public class PlayerAnimationHandler : NetworkBehaviour
     /// 被弾アニメーションをトリガー（HPHandlerから呼び出される）
     /// </summary>
     /// <param name="lockDuration">アクションロック時間（秒）。0以下で無効</param>
-    public void TriggerGetDamage(float lockDuration = 0.5f)
+    public void TriggerGetDamage(float lockDuration = 1.1f) // 0.5f->0.75f
     {
         if (animator != null && (hpHandler == null || !hpHandler.isDead))
         {

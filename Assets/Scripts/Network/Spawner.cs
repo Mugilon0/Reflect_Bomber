@@ -1,264 +1,264 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using Fusion;
-using Fusion.Sockets;
-using System;
-using UnityEngine.SceneManagement;
-using UnityEngine.Diagnostics;
-using System.Linq;
+//using System.Collections;
+//using System.Collections.Generic;
+//using UnityEngine;
+//using Fusion;
+//using Fusion.Sockets;
+//using System;
+//using UnityEngine.SceneManagement;
+//using UnityEngine.Diagnostics;
+//using System.Linq;
 
-public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
-{
+//public class Spawner : MonoBehaviour, INetworkRunnerCallbacks
+//{
 
-    public NetworkPlayer playerPrefab;
+//    public NetworkPlayer playerPrefab;
 
-    public GameStateManager gameStateManagerPrefab;
-    // Mapping between Token ID and Re-created Players
-    Dictionary<int, NetworkPlayer> mapTokenIDWithNetworkPlayer;
+//    public GameStateManager gameStateManagerPrefab;
+//    // Mapping between Token ID and Re-created Players
+//    Dictionary<int, NetworkPlayer> mapTokenIDWithNetworkPlayer;
 
-    // other components
-    CharacterInputHandler characterInputHandler;
-    SessionListUIHandler sessionListUIHandler;
+//    // other components
+//    CharacterInputHandler characterInputHandler;
+//    SessionListUIHandler sessionListUIHandler;
 
-    void Awake()
-    {
-        // create a new Dictionary
-        mapTokenIDWithNetworkPlayer = new Dictionary<int, NetworkPlayer>();
+//    void Awake()
+//    {
+//        // create a new Dictionary
+//        mapTokenIDWithNetworkPlayer = new Dictionary<int, NetworkPlayer>();
 
-        sessionListUIHandler = FindObjectOfType<SessionListUIHandler>(true);
-    }
+//        sessionListUIHandler = FindObjectOfType<SessionListUIHandler>(true);
+//    }
 
-    void Start()
-    {
+//    void Start()
+//    {
 
-    }
+//    }
 
-    int GetPlayerToken(NetworkRunner runner, PlayerRef player)
-    {
-        if (runner.LocalPlayer == player)
-        {
-            // Just use the local Player Connection Token
-            return ConnectionTokenUtils.HashToken(GameManager.instance.GetConnectionToken());
-        }
-        else
-        {
-            // Get the Connection Token stored when the Client connects to this Host
-            var token = runner.GetPlayerConnectionToken(player);
+//    int GetPlayerToken(NetworkRunner runner, PlayerRef player)
+//    {
+//        if (runner.LocalPlayer == player)
+//        {
+//            // Just use the local Player Connection Token
+//            return ConnectionTokenUtils.HashToken(GameManager.instance.GetConnectionToken());
+//        }
+//        else
+//        {
+//            // Get the Connection Token stored when the Client connects to this Host
+//            var token = runner.GetPlayerConnectionToken(player);
 
-            if (token != null)
-                return ConnectionTokenUtils.HashToken(token);
+//            if (token != null)
+//                return ConnectionTokenUtils.HashToken(token);
 
-            Debug.LogError($"GetPlayerToken returned invalid token");
+//            Debug.LogError($"GetPlayerToken returned invalid token");
 
-            return 0; // invalid
-        }
-    }
+//            return 0; // invalid
+//        }
+//    }
 
-    public void OnConnectedToServer(NetworkRunner runner)
-    {
-        Debug.Log("OnConnectedToServer");
-    }
-
-
-    public void SetConnectionTokenMapping(int token, NetworkPlayer networkPlayer)
-    {
-        mapTokenIDWithNetworkPlayer.Add(token, networkPlayer);
-    }
+//    public void OnConnectedToServer(NetworkRunner runner)
+//    {
+//        Debug.Log("OnConnectedToServer");
+//    }
 
 
+//    public void SetConnectionTokenMapping(int token, NetworkPlayer networkPlayer)
+//    {
+//        mapTokenIDWithNetworkPlayer.Add(token, networkPlayer);
+//    }
 
-    public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
-    {
-        if (runner.IsServer)
-        {
-            if (GameStateManager.Instance == null)
-            {
-                Debug.Log("Spawning GameStateManager");
-                runner.Spawn(gameStateManagerPrefab); // プレハブを生成
-            }
 
-            // Get the token for the player
-            int playerToken = GetPlayerToken(runner, player); //プレイヤーのトークンを取得
 
-            Debug.Log("OnPlayerJoined we are server. Connection token {playerToken}");
+//    public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
+//    {
+//        if (runner.IsServer)
+//        {
+//            if (GameStateManager.Instance == null)
+//            {
+//                Debug.Log("Spawning GameStateManager");
+//                runner.Spawn(gameStateManagerPrefab); // プレハブを生成
+//            }
 
-            // check if the token is already recorded by the server
-            if (mapTokenIDWithNetworkPlayer.TryGetValue(playerToken, out NetworkPlayer networkPlayer))
-            {
-                Debug.Log($"Found old connection token for token {playerToken}. Assigning controlls to that player");
+//            // Get the token for the player
+//            int playerToken = GetPlayerToken(runner, player); //プレイヤーのトークンを取得
 
-                networkPlayer.GetComponent<NetworkObject>().AssignInputAuthority(player); // このプレイヤーを制御できるようになる
+//            Debug.Log("OnPlayerJoined we are server. Connection token {playerToken}");
+
+//            // check if the token is already recorded by the server
+//            if (mapTokenIDWithNetworkPlayer.TryGetValue(playerToken, out NetworkPlayer networkPlayer))
+//            {
+//                Debug.Log($"Found old connection token for token {playerToken}. Assigning controlls to that player");
+
+//                networkPlayer.GetComponent<NetworkObject>().AssignInputAuthority(player); // このプレイヤーを制御できるようになる
                 
-                // 再接続するプレイヤーにもSetPlayerObjectを実行
-                runner.SetPlayerObject(player, networkPlayer.GetComponent<NetworkObject>());
+//                // 再接続するプレイヤーにもSetPlayerObjectを実行
+//                runner.SetPlayerObject(player, networkPlayer.GetComponent<NetworkObject>());
 
-                networkPlayer.Spawned();
-            }
-            else
-            {
-                Debug.Log($"Spawning new player for connection token {playerToken}");
+//                networkPlayer.Spawned();
+//            }
+//            else
+//            {
+//                Debug.Log($"Spawning new player for connection token {playerToken}");
 
-                bool isReadyScene = SceneManager.GetActiveScene().name == "Ready";
+//                bool isReadyScene = SceneManager.GetActiveScene().name == "Ready";
 
-                Vector3 spawnPosition = Utils.GetRandomSpawnPoint();
+//                Vector3 spawnPosition = Utils.GetRandomSpawnPoint();
 
-                if (isReadyScene)
-                {
-                    //Check if we are the host
-                    if (runner.SessionInfo.MaxPlayers - player.PlayerId == 1)
-                        spawnPosition = new Vector3(-1 * 3, 1, 0); // host用
-                    else
-                        spawnPosition = new Vector3(player.PlayerId * 3, 1, 0);
-                }
+//                if (isReadyScene)
+//                {
+//                    //Check if we are the host
+//                    if (runner.SessionInfo.MaxPlayers - player.PlayerId == 1)
+//                        spawnPosition = new Vector3(-1 * 3, 1, 0); // host用
+//                    else
+//                        spawnPosition = new Vector3(player.PlayerId * 3, 1, 0);
+//                }
 
-                NetworkPlayer spawnedNetworkPlayer = runner.Spawn(playerPrefab, spawnPosition, Quaternion.identity, player); // 後でリスポーン地点変える
-                spawnedNetworkPlayer.transform.position = spawnPosition; // 位置のバグ？を修正する
+//                NetworkPlayer spawnedNetworkPlayer = runner.Spawn(playerPrefab, spawnPosition, Quaternion.identity, player); // 後でリスポーン地点変える
+//                spawnedNetworkPlayer.transform.position = spawnPosition; // 位置のバグ？を修正する
 
-                // それぞれ各プレイヤーの色を変える
-                CharacterOutfitHandler outfitHandler = spawnedNetworkPlayer.GetComponent<CharacterOutfitHandler>();
-                if (outfitHandler != null)
-                {
-                    // runner.ActivePlayers.Count() で、この新しいプレイヤーを含めた現在の総人数を取得します
-                    int playerCount = runner.ActivePlayers.Count();
+//                // それぞれ各プレイヤーの色を変える
+//                CharacterOutfitHandler outfitHandler = spawnedNetworkPlayer.GetComponent<CharacterOutfitHandler>();
+//                if (outfitHandler != null)
+//                {
+//                    // runner.ActivePlayers.Count() で、この新しいプレイヤーを含めた現在の総人数を取得します
+//                    int playerCount = runner.ActivePlayers.Count();
 
-                    if (playerCount == 1)
-                    {
-                        // 最初の1人なので、ホストです。
-                        // 何もせず、デフォルトのマテリアルを使用します。
-                        Debug.Log($"Host (Player {player.PlayerId}) joined. Using default material. Total players: {playerCount}");
-                    }
-                    else
-                    {
-                        // 2人目以降なので、クライアントです。
-                        // 2人目 -> materialIndex 0 (2 - 2)
-                        // 3人目 -> materialIndex 1 (3 - 2)
-                        // 4人目 -> materialIndex 2 (4 - 2)
-                        int materialIndex = playerCount - 2;
+//                    if (playerCount == 1)
+//                    {
+//                        // 最初の1人なので、ホストです。
+//                        // 何もせず、デフォルトのマテリアルを使用します。
+//                        Debug.Log($"Host (Player {player.PlayerId}) joined. Using default material. Total players: {playerCount}");
+//                    }
+//                    else
+//                    {
+//                        // 2人目以降なので、クライアントです。
+//                        // 2人目 -> materialIndex 0 (2 - 2)
+//                        // 3人目 -> materialIndex 1 (3 - 2)
+//                        // 4人目 -> materialIndex 2 (4 - 2)
+//                        int materialIndex = playerCount - 2;
 
-                        // マテリアルリスト（3つ）の範囲内かチェック
-                        if (materialIndex >= 0 && materialIndex < outfitHandler.bodyMaterials.Count)
-                        {
-                            outfitHandler.SetInitialMaterialIndex(materialIndex);
-                            Debug.Log($"Client (Player {player.PlayerId}) joined. Assigning material index {materialIndex}. Total players: {playerCount}");
-                        }
-                        else
-                        {
-                            Debug.LogWarning($"Could not assign material to player {player.PlayerId}. Calculated index {materialIndex} is out of bounds.");
-                        }
-                    }
-                }
-
-
-                // PlayerRefに登録(?)
-                runner.SetPlayerObject(player, spawnedNetworkPlayer.Object);
-
-                // Store the token for the player
-                spawnedNetworkPlayer.token = playerToken;
-
-                // store the mapping between playerToken and the spawned network player
-                mapTokenIDWithNetworkPlayer[playerToken] = spawnedNetworkPlayer;
-
-                StartCoroutine(NotifyPlayerJoined(spawnedNetworkPlayer));
-            }
-        }
-        else Debug.Log("OnPlayerJoined");
-    }
-
-    public void OnInput(NetworkRunner runner, NetworkInput input)
-    {  // 入力された値を受け取り、実際の動作を実装する
-        if (characterInputHandler == null && NetworkPlayer.Local != null) // ローカルの入力にアクセスできるようにする
-            characterInputHandler = NetworkPlayer.Local.GetComponent<CharacterInputHandler>();
-
-        if (characterInputHandler != null)
-        {
-            input.Set(characterInputHandler.GetNetworkInput()); // 入力を設定、動くようになる
-        }
-    }
+//                        // マテリアルリスト（3つ）の範囲内かチェック
+//                        if (materialIndex >= 0 && materialIndex < outfitHandler.bodyMaterials.Count)
+//                        {
+//                            outfitHandler.SetInitialMaterialIndex(materialIndex);
+//                            Debug.Log($"Client (Player {player.PlayerId}) joined. Assigning material index {materialIndex}. Total players: {playerCount}");
+//                        }
+//                        else
+//                        {
+//                            Debug.LogWarning($"Could not assign material to player {player.PlayerId}. Calculated index {materialIndex} is out of bounds.");
+//                        }
+//                    }
+//                }
 
 
+//                // PlayerRefに登録(?)
+//                runner.SetPlayerObject(player, spawnedNetworkPlayer.Object);
 
-    public void OnPlayerLeft(NetworkRunner runner, PlayerRef player) { }
+//                // Store the token for the player
+//                spawnedNetworkPlayer.token = playerToken;
 
-    public void OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input) { }
-    public void OnShutdown(NetworkRunner runner, ShutdownReason shutdownReason) { }
-    public void OnDisconnectedFromServer(NetworkRunner runner) { }
-    public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) { }
-    public void OnConnectFailed(NetworkRunner runner, NetAddress remoteAddress, NetConnectFailedReason reason) { }
-    public void OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message) { }
+//                // store the mapping between playerToken and the spawned network player
+//                mapTokenIDWithNetworkPlayer[playerToken] = spawnedNetworkPlayer;
 
-    // 他プレイヤーのロビー情報を受け取る
-    public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList)
-    {
-        // SessionListUIHandlerが有効な場合のみ
-        if (sessionListUIHandler == null)
-            return;
-        if (sessionList.Count == 0)
-        {
-            Debug.Log("Joined lobby no sessions found");
+//                StartCoroutine(NotifyPlayerJoined(spawnedNetworkPlayer));
+//            }
+//        }
+//        else Debug.Log("OnPlayerJoined");
+//    }
 
-            sessionListUIHandler.OnNoSessionFound();
-        }
-        else
-        {
-            sessionListUIHandler.ClearList(); //古い情報をクリア
+//    public void OnInput(NetworkRunner runner, NetworkInput input)
+//    {  // 入力された値を受け取り、実際の動作を実装する
+//        if (characterInputHandler == null && NetworkPlayer.Local != null) // ローカルの入力にアクセスできるようにする
+//            characterInputHandler = NetworkPlayer.Local.GetComponent<CharacterInputHandler>();
 
-            foreach (SessionInfo sessionInfo in sessionList)
-            {
-                sessionListUIHandler.AddToList(sessionInfo);
-
-                Debug.Log($"Found session {sessionInfo.Name} playerCount {sessionInfo.PlayerCount}");
-            }
-        }
+//        if (characterInputHandler != null)
+//        {
+//            input.Set(characterInputHandler.GetNetworkInput()); // 入力を設定、動くようになる
+//        }
+//    }
 
 
-    }
-    public void OnCustomAuthenticationResponse(NetworkRunner runner, Dictionary<string, object> data) { }
-    public async void OnHostMigration(NetworkRunner runner, HostMigrationToken hostMigrationToken)
-    {
-        Debug.Log("OnHostMigration");
-        return; // いったんHost Migrationは停止 12/20
 
-        // shut down the current runner
-        await runner.Shutdown(shutdownReason: ShutdownReason.HostMigration);
+//    public void OnPlayerLeft(NetworkRunner runner, PlayerRef player) { }
 
-        // Find the network runner handler and start the host migration
-        FindObjectOfType<NetworkRunnerHandler>().StartHostMigration(hostMigrationToken);
+//    public void OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input) { }
+//    public void OnShutdown(NetworkRunner runner, ShutdownReason shutdownReason) { }
+//    public void OnDisconnectedFromServer(NetworkRunner runner) { }
+//    public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) { }
+//    public void OnConnectFailed(NetworkRunner runner, NetAddress remoteAddress, NetConnectFailedReason reason) { }
+//    public void OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message) { }
 
-    }
-    public void OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ArraySegment<byte> data) { }
-    public void OnSceneLoadDone(NetworkRunner runner) { }
-    public void OnSceneLoadStart(NetworkRunner runner) { }
+//    // 他プレイヤーのロビー情報を受け取る
+//    public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList)
+//    {
+//        // SessionListUIHandlerが有効な場合のみ
+//        if (sessionListUIHandler == null)
+//            return;
+//        if (sessionList.Count == 0)
+//        {
+//            Debug.Log("Joined lobby no sessions found");
 
-    public void OnHostMigrationCleanUp() //　消えたplayerをけす
-    {
-        Debug.Log("Spawner OnHostMigrationCleanUp started");
-        return; // いったんHost Migrationは停止 12/20
+//            sessionListUIHandler.OnNoSessionFound();
+//        }
+//        else
+//        {
+//            sessionListUIHandler.ClearList(); //古い情報をクリア
 
-        foreach (KeyValuePair<int, NetworkPlayer> entry in mapTokenIDWithNetworkPlayer)
-        {
-            NetworkObject networkObjectInDictionary = entry.Value.GetComponent<NetworkObject>();
+//            foreach (SessionInfo sessionInfo in sessionList)
+//            {
+//                sessionListUIHandler.AddToList(sessionInfo);
 
-            if (networkObjectInDictionary.InputAuthority.IsNone)
-            {
-                Debug.Log($"{Time.time} Found player that has not reconnected. Despawning {entry.Value.nickName}");
+//                Debug.Log($"Found session {sessionInfo.Name} playerCount {sessionInfo.PlayerCount}");
+//            }
+//        }
 
-                networkObjectInDictionary.Runner.Despawn(networkObjectInDictionary);
-            }
-        }
 
-        Debug.Log("Spawner OnHostMigrationCleanUp completed");
-    }
+//    }
+//    public void OnCustomAuthenticationResponse(NetworkRunner runner, Dictionary<string, object> data) { }
+//    public async void OnHostMigration(NetworkRunner runner, HostMigrationToken hostMigrationToken)
+//    {
+//        Debug.Log("OnHostMigration");
+//        return; // いったんHost Migrationは停止 12/20
 
-    private System.Collections.IEnumerator NotifyPlayerJoined(NetworkPlayer newPlayer)
-    {
-        // プレイヤーのニックネームがネットワーク経由で同期されるのを少し待つ
-        yield return new WaitForSeconds(0.5f);
+//        // shut down the current runner
+//        await runner.Shutdown(shutdownReason: ShutdownReason.HostMigration);
 
-        if (GameStateManager.Instance != null && newPlayer != null)
-        {
-            // "System"という名前で、入室メッセージを全員に送信
-            GameStateManager.Instance.RPC_RelayChatMessage("System", $"{newPlayer.nickName}さんが参加しました！");
-        }
-    }
-}
+//        // Find the network runner handler and start the host migration
+//        FindObjectOfType<NetworkRunnerHandler>().StartHostMigration(hostMigrationToken);
+
+//    }
+//    public void OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ArraySegment<byte> data) { }
+//    public void OnSceneLoadDone(NetworkRunner runner) { }
+//    public void OnSceneLoadStart(NetworkRunner runner) { }
+
+//    public void OnHostMigrationCleanUp() //　消えたplayerをけす
+//    {
+//        Debug.Log("Spawner OnHostMigrationCleanUp started");
+//        return; // いったんHost Migrationは停止 12/20
+
+//        foreach (KeyValuePair<int, NetworkPlayer> entry in mapTokenIDWithNetworkPlayer)
+//        {
+//            NetworkObject networkObjectInDictionary = entry.Value.GetComponent<NetworkObject>();
+
+//            if (networkObjectInDictionary.InputAuthority.IsNone)
+//            {
+//                Debug.Log($"{Time.time} Found player that has not reconnected. Despawning {entry.Value.nickName}");
+
+//                networkObjectInDictionary.Runner.Despawn(networkObjectInDictionary);
+//            }
+//        }
+
+//        Debug.Log("Spawner OnHostMigrationCleanUp completed");
+//    }
+
+//    private System.Collections.IEnumerator NotifyPlayerJoined(NetworkPlayer newPlayer)
+//    {
+//        // プレイヤーのニックネームがネットワーク経由で同期されるのを少し待つ
+//        yield return new WaitForSeconds(0.5f);
+
+//        if (GameStateManager.Instance != null && newPlayer != null)
+//        {
+//            // "System"という名前で、入室メッセージを全員に送信
+//            GameStateManager.Instance.RPC_RelayChatMessage("System", $"{newPlayer.nickName}さんが参加しました！");
+//        }
+//    }
+//}

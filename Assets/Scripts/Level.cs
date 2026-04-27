@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Fusion;
+using Unity.AI.Navigation;
 
 public class Level : NetworkBehaviour
 {
@@ -27,6 +28,15 @@ public class Level : NetworkBehaviour
     public override void Spawned()
     {
         Current = this;
+
+        // Bot‚ðŽg‚¤‚È‚ç•K—v
+        var surface = GetComponentInChildren<NavMeshSurface>();
+        if (surface != null)
+        {
+            surface.BuildNavMesh();
+            Debug.Log("[Level] NavMesh built");
+        }
+
         RoundManager.Instance.Rpc_LoadDone();
     }
 

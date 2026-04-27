@@ -132,7 +132,7 @@ public class GrenadeHandler : NetworkBehaviour
                 break;
 
             case EBombType.PutRange:
-                explosionRadius = 3.0f;
+                explosionRadius = 4.0f;
                 // 置きボム: 自爆保護なし（従来通り）
                 IsSelfDamageEnabled = true;
                 break;

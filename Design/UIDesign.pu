@@ -1,0 +1,184 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+'========================
+' 表示切り替え基盤
+'========================
+class UIScreen {
+    +isModal : bool
+    +activeScreen : UIScreen  [static]
+    +Focus(screen : UIScreen) [static]
+    +Focus()
+    +Defocus()
+    +Back()
+}
+
+'========================
+' 全体統括（DontDestroyOnLoad）
+'========================
+class UIManager {
+    -lobbyUI      : UIScreen
+    -readyUI      : UIScreen
+    -loadingUI    : UIScreen
+    -introUI      : UIScreen
+    -gameUI       : UIScreen
+    -outroUI      : UIScreen
+    -postGameUI   : UIScreen
+
+    +Subscribe(gsm : GameStateManager)
+    +SubscribeNetwork(nrh : NetworkRunnerHandler)
+    -HandleStateChanged(state : EGameStateNet)
+}
+
+note right of UIManager
+  ・DontDestroyOnLoad
+  ・GameStateManagerのOnStateChangedを購読
+  ・NetworkRunnerHandlerのイベントを購読
+  ・UIScreenの切り替えだけを担当
+  ・各UIHandlerは直接知らない
+end note
+
+'========================
+' Lobby画面
+'========================
+class LobbyUIHandler {
+    -roomListPanel    : GameObject
+    -createRoomPanel  : GameObject
+    -randomMatchPanel : GameObject
+    -statusPanel      : GameObject
+    -sessionNameInput : TMP_InputField
+    -playerNameInput  : TMP_InputField
+    -passwordInput    : TMP_InputField
+    -hostCommentInput : TMP_InputField
+    -maxPlayersInput  : TMP_InputField
+    -maxRoundsInput   : TMP_InputField
+
+    +OnFindGameClicked()
+    +OnCreateRoomClicked()
+    +OnStartSessionClicked()
+    +OnRandomMatchClicked()
+    +ShowRoomList()
+    +ShowError(message : string)
+}
+
+note right of LobbyUIHandler
+  ・ルーム一覧・作成・参加・
+    ランダムマッチのUI操作
+  ・NetworkRunnerHandlerを
+    直接知らない
+  ・イベント経由で通知
+end note
+
+'========================
+' Ready画面
+'========================
+class ReadyUIHandler {
+    -readyButton      : Button
+    -countdownText    : TMP_Text
+    -chatUI           : ChatUIHandler
+
+    +OnReadyButtonClicked()
+    +SetCountdownText(text : string)
+    +SetLocalPlayerReadyState(isReady : bool)
+    +UpdateCountdownDisplay(seconds : byte)
+}
+
+'========================
+' チャット
+'========================
+class ChatUIHandler {
+    -messagePrefab : GameObject
+    -logParent     : Transform
+    -maxMessages   : int
+
+    +AddNewMessage(playerName : string, message : string)
+}
+
+'========================
+' Loading画面
+'========================
+class LoadingUIHandler {
+    -loadingText : TMP_Text
+    +SetLoadingText(text : string)
+}
+
+'========================
+' Game画面（HUD）
+'========================
+class GameUIHandler {
+    -timerText     : TMP_Text
+    -scoreboard    : InGameScoreUIHandler
+
+    +SetTimerText(time : float)
+    +UpdateScores()
+}
+
+'========================
+' スコアボード
+'========================
+class InGameScoreUIHandler {
+    -scoreEntryPrefab : GameObject
+    -scoreBoardParent : Transform
+
+    +UpdateAllPlayerScores()
+}
+
+'========================
+' Outro・PostGame画面
+'========================
+class ResultUIHandler {
+    +Initialize()
+    +AddPlayerResult(rank, name, roundScore, totalScore)
+}
+
+'========================
+' イベント通知用interface
+'========================
+interface ILobbyUIEvent {
+    +OnFindGameClicked(playerName : string)
+    +OnCreateRoomClicked(config : RoomConfig)
+    +OnRandomMatchClicked()
+    +OnJoinSessionClicked(sessionInfo : SessionInfo, password : string)
+}
+
+'========================
+' 関係
+'========================
+UIManager o-- UIScreen : has
+UIManager ..> UIScreen : focuses
+UIManager ..> GameStateManager   : subscribes
+UIManager ..> NetworkRunnerHandler : subscribes
+
+UIScreen <-- LobbyUIHandler      : attached to
+UIScreen <-- ReadyUIHandler      : attached to
+UIScreen <-- LoadingUIHandler    : attached to
+UIScreen <-- GameUIHandler       : attached to
+UIScreen <-- ResultUIHandler     : attached to
+
+ReadyUIHandler o-- ChatUIHandler : has
+GameUIHandler  o-- InGameScoreUIHandler : has
+
+LobbyUIHandler ..|> ILobbyUIEvent : implements
+NetworkRunnerHandler ..> ILobbyUIEvent : uses
+
+@enduml
+```
+
+---
+
+## 階層のイメージ
+```
+UIManager（DontDestroyOnLoad）
+  ├─ lobbyUI（UIScreen）
+  │    └─ LobbyUIHandler    ← ボタン・入力フィールド操作
+  ├─ readyUI（UIScreen）
+  │    └─ ReadyUIHandler    ← Readyボタン・カウントダウン
+  │         └─ ChatUIHandler
+  ├─ loadingUI（UIScreen）
+  │    └─ LoadingUIHandler
+  ├─ gameUI（UIScreen）
+  │    └─ GameUIHandler     ← タイマー・スコアボード
+  ├─ outroUI（UIScreen）
+  │    └─ ResultUIHandler
+  └─ postGameUI（UIScreen）
+       └─ ResultUIHandler（共用可）

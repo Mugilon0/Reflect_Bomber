@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,36 +6,66 @@ using Fusion;
 
 public class SessionInfoListUIItem : MonoBehaviour
 {
-    public TextMeshProUGUI sessionNameText;
-    public TextMeshProUGUI playerCountText;
-    public Button joinButton;
+    [Header("必須項目")]
+    [SerializeField] private TextMeshProUGUI sessionNameText;
+    [SerializeField] private TextMeshProUGUI playerCountText;
+    [SerializeField] private Button joinButton;
 
-    SessionInfo sessionInfo;
+    [Header("任意項目（未設定でもエラーにならない）")]
+    [SerializeField] private GameObject lockIcon;         // Privateなら表示
+    [SerializeField] private TextMeshProUGUI roundsText;  // ラウンド数
+    [SerializeField] private TextMeshProUGUI commentText; // ホストコメント
 
-    // Event
+    private SessionInfo _sessionInfo;
+
     public event Action<SessionInfo> OnJoinSession;
 
     public void SetInfomation(SessionInfo sessionInfo)
     {
-        this.sessionInfo = sessionInfo;
+        _sessionInfo = sessionInfo;
 
-        sessionNameText.text = sessionInfo.Name;
-        playerCountText.text = $"{sessionInfo.PlayerCount.ToString()}/{sessionInfo.MaxPlayers.ToString()}";
+        // セッション名
+        if (sessionNameText != null)
+            sessionNameText.text = sessionInfo.Name;
 
-        bool isJoinButtonActive = true;
+        // 参加人数
+        if (playerCountText != null)
+            playerCountText.text = $"{sessionInfo.PlayerCount}/{sessionInfo.MaxPlayers}";
 
-        if (sessionInfo.PlayerCount >= sessionInfo.MaxPlayers)
-            isJoinButtonActive = false;
+        // 満員ならJoinボタンを非表示
+        if (joinButton != null)
+            joinButton.gameObject.SetActive(sessionInfo.PlayerCount < sessionInfo.MaxPlayers);
 
-        joinButton.gameObject.SetActive(isJoinButtonActive);
+        // パスワードの有無（鍵マーク）
+        if (lockIcon != null)
+        {
+            bool isPrivate = sessionInfo.Properties.TryGetValue("roomMode", out var roomMode)
+                && (int)roomMode == (int)RoomMode.Private;
+            lockIcon.SetActive(isPrivate);
+        }
 
+        // ラウンド数
+        if (roundsText != null)
+        {
+            if (sessionInfo.Properties.TryGetValue("maxRounds", out var maxRounds))
+                roundsText.text = $"{maxRounds} Rounds";
+            else
+                roundsText.gameObject.SetActive(false);
+        }
 
+        // ホストコメント
+        if (commentText != null)
+        {
+            if (sessionInfo.Properties.TryGetValue("hostComment", out var comment)
+                && !string.IsNullOrEmpty(comment.ToString()))
+                commentText.text = comment.ToString();
+            else
+                commentText.gameObject.SetActive(false);
+        }
     }
 
     public void OnClick()
     {
-        // Invoke the join session event
-        OnJoinSession?.Invoke(sessionInfo);
+        OnJoinSession?.Invoke(_sessionInfo);
     }
-
 }

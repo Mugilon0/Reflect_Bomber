@@ -7,8 +7,11 @@ using UnityEngine.SceneManagement;
 public class CharacterMovementHandler : NetworkBehaviour
 {
     [Networked]
-    public TickTimer MoveLockTimer { get; set; } // 操作ロック用のタイマー
-    public bool CanMove => MoveLockTimer.ExpiredOrNotRunning(Runner); // タイマーが動いていない時だけtrueになる
+    public TickTimer MoveLockTimer { get; set; }
+    [Networked]
+    public NetworkBool IsLocked { get; set; }
+    public bool CanMove => !IsLocked && MoveLockTimer.ExpiredOrNotRunning(Runner);
+
 
 
 
@@ -17,7 +20,6 @@ public class CharacterMovementHandler : NetworkBehaviour
     //other components
     NetworkCharacterControllerPrototypeCustom networkCharacterControllerPrototypeCustom;
     HPHandler hpHandler;
-    private ScoreCalculator scoreCalculator;
     //Camera localCamera; // マウスでカメラ動かさないならまだ不要
 
     private void Awake()
@@ -25,13 +27,9 @@ public class CharacterMovementHandler : NetworkBehaviour
         networkCharacterControllerPrototypeCustom = GetComponent<NetworkCharacterControllerPrototypeCustom>();
         hpHandler = GetComponent<HPHandler>();
         //localCamera = GetComponentInChildren<Camera>(); // まだ不要
-        scoreCalculator = GetComponent<ScoreCalculator>();
-    }
-    // Start is called before the first frame update
-    void Start()
-    {
 
     }
+
 
     //private void Update()　
     //{
@@ -60,21 +58,20 @@ public class CharacterMovementHandler : NetworkBehaviour
                 return;
 
         }
-
         // added 7/10
         if (SceneManager.GetActiveScene().name == "Ready")
             return;
 
-        if (GetInput(out NetworkInputData networkInputData)) //　Get the input from the network
+        if (GetInput(out NetworkInputData networkInputData)) 
         {
-            // 1. 回転処理: 左右の入力でキャラクターのY軸を回転させる
+
             networkCharacterControllerPrototypeCustom.Rotate(networkInputData.rotationInput);
 
             // Rotate the input from the network
-            //transform.forward = networkInputData.aimForwardVector; // たいだな方法 急に向きがかわると変になるかも
+            //transform.forward = networkInputData.aimForwardVector; 
 
 
-            // Cancel out rotation on X axis as we dont want our character to tilt 上下に向いたとき傾かないようにする
+            // Cancel out rotation on X axis as we dont want our character to tilt 
             Quaternion rotation = transform.rotation;
             rotation.eulerAngles = new Vector3(0, rotation.eulerAngles.y, rotation.eulerAngles.z);
             transform.rotation = rotation;
@@ -86,8 +83,8 @@ public class CharacterMovementHandler : NetworkBehaviour
                 Vector3 moveDirection = transform.forward * networkInputData.movementInput.y;
                 moveDirection.Normalize();
 
-                //networkCharacterControllerPrototypeCustom.Move(moveDirection); // データはおそらくCharacterInputHandlerからもらう
-                networkCharacterControllerPrototypeCustom.Move(moveDirection, networkInputData.movementInput.y); // ← このように変更
+                //networkCharacterControllerPrototypeCustom.Move(moveDirection); 
+                networkCharacterControllerPrototypeCustom.Move(moveDirection, networkInputData.movementInput.y); 
             }
 
 
@@ -117,25 +114,19 @@ public class CharacterMovementHandler : NetworkBehaviour
 
     public void RequestRespawn()
     {
-        isRespawnRequested = true; // リスポーン時にトリガーする
+        isRespawnRequested = true;
     }
 
     void Respawn()
     {
-        if (scoreCalculator != null)
-        {
-            scoreCalculator.OnDeathPenalty();
-        }
 
-
-        networkCharacterControllerPrototypeCustom.TeleportToPosition(Utils.GetRandomSpawnPoint()); // transform.positionをかえるよりok
+        networkCharacterControllerPrototypeCustom.TeleportToPosition(Utils.GetRandomSpawnPoint()); 
 
         hpHandler.OnRespawned();
 
         isRespawnRequested = false;
     }
 
-    // プレイヤー内のヒットボックスにもぶつからないようにするため
     public void SetCharacterControllerEnabled(bool isEnabled)
     {
         networkCharacterControllerPrototypeCustom.Controller.enabled = isEnabled;

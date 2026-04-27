@@ -95,7 +95,7 @@ public class WeaponHandler : NetworkBehaviour
         Vector3 forwardDirection = aimForwardVector.normalized;
 
         // プレイヤーの Transform を取得
-        Transform playerTransform = NetworkPlayer.ActivePlayers[Object.InputAuthority].transform;
+        Transform playerTransform = PlayerRegistry.GetPlayer(Object.InputAuthority)?.transform;
 
         // プレイヤーのローカル右方向ベクトル
         Vector3 playerRight = playerTransform.right;

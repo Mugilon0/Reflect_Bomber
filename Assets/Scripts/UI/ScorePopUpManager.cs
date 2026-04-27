@@ -1,70 +1,159 @@
 using UnityEngine;
-using DamageNumbersPro; // Damage Numbers Proの名前空間
+using DamageNumbersPro;
 
 /// <summary>
 /// Damage Numbers Pro を使用してスコアポップアップを表示するマネージャー
-/// Prefabに既に設定されているテキスト（"+1"など）をそのまま使用
+/// UIManager配下のCanvasを自動で見つけてScreenSpace上に表示する
 /// </summary>
 public class ScorePopupManager : MonoBehaviour
 {
     public static ScorePopupManager Instance { get; private set; }
 
     [Header("Damage Number Settings")]
-    [Tooltip("Damage Numbers ProのPrefabをアサイン（Prefab内で既に'+1'などのテキストを設定しておく）")]
     [SerializeField] private DamageNumber damageNumberPrefab;
 
-    [Header("Display Settings")]
-    [Tooltip("プレイヤーの位置からのオフセット(右上に表示)")]
-    [SerializeField] private Vector3 defaultOffset = new Vector3(1.5f, 2.0f, 0);
+    private RectTransform _canvasRect;
 
     private void Awake()
     {
         if (Instance == null)
-        {
             Instance = this;
-        }
         else
         {
             Destroy(gameObject);
             return;
         }
 
-        // Prefabの確認
         if (damageNumberPrefab == null)
-        {
             Debug.LogError("ScorePopupManager: Damage Number Prefab is not assigned!");
+    }
+
+    private void Start()
+    {
+        // UIManager配下のCanvasを自動で探す
+        var uiManager = FindObjectOfType<UIManager>();
+        if (uiManager != null)
+        {
+            _canvasRect = uiManager.GetComponentInChildren<Canvas>()?.GetComponent<RectTransform>();
+            if (_canvasRect == null)
+                Debug.LogError("ScorePopupManager: Canvas not found under UIManager!");
+        }
+        else
+        {
+            Debug.LogError("ScorePopupManager: UIManager not found!");
         }
     }
 
     /// <summary>
-    /// スコアポップアップを表示する
-    /// Prefabに設定されているテキスト（"+1"など）をそのまま使用
+    /// ワールド座標をScreenSpace変換してCanvas上にポップアップを表示する
     /// </summary>
-    /// <param name="worldPosition">プレイヤーのワールド座標</param>
-    /// <param name="customOffset">カスタムオフセット(オプション)</param>
     public static void ShowPopup(Vector3 worldPosition, Vector3? customOffset = null)
     {
-        if (Instance == null)
-        {
-            Debug.LogWarning("ScorePopupManager: Instance is null! Make sure ScorePopupManager is in the World1 scene.");
+        if (Instance == null || Instance.damageNumberPrefab == null || Instance._canvasRect == null)
             return;
-        }
 
-        if (Instance.damageNumberPrefab == null)
-        {
-            Debug.LogWarning("ScorePopupManager: Damage Number Prefab is not assigned!");
-            return;
-        }
+        Camera cam = Camera.main;
+        if (cam == null) return;
 
-        // オフセットを適用
-        Vector3 offset = customOffset ?? Instance.defaultOffset;
-        Vector3 spawnPosition = worldPosition + offset;
+        // ワールド座標にオフセットを加算
+        Vector3 offset = customOffset ?? Vector3.zero;
+        Vector3 targetWorldPos = worldPosition + offset;
 
-        // Prefabに設定されているテキストをそのまま使用してスポーン
-        DamageNumber damageNumber = Instance.damageNumberPrefab.Spawn(spawnPosition);
+        // ワールド座標 → スクリーン座標
+        Vector3 screenPos = cam.WorldToScreenPoint(targetWorldPos);
 
-        // 必要に応じてカスタマイズ（Prefabで既に設定している場合は不要）
-        // damageNumber.SetColor(Color.green);
-        // damageNumber.SetScale(1.2f);
+        // カメラの後ろなら表示しない
+        if (screenPos.z < 0) return;
+
+        // スクリーン座標 → Canvas上のローカル座標
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            Instance._canvasRect,
+            screenPos,
+            null,
+            out Vector2 localPoint);
+
+        // Canvas上にスポーン
+        Instance.damageNumberPrefab.SpawnGUI(Instance._canvasRect, localPoint);
     }
 }
+
+
+
+
+
+
+
+
+
+
+//using UnityEngine;
+//using DamageNumbersPro;
+
+///// <summary>
+///// Damage Numbers Pro を使用してスコアポップアップを表示するマネージャー
+///// ScreenSpace CanvasにスポーンすることでカメラアングルによらずUIとして表示する
+///// </summary>
+//public class ScorePopupManager : MonoBehaviour
+//{
+//    public static ScorePopupManager Instance { get; private set; }
+
+//    [Header("Damage Number Settings")]
+//    [SerializeField] private DamageNumber damageNumberPrefab;
+
+//    [Header("Canvas Settings")]
+//    [SerializeField] private RectTransform canvasRect; // GameUI上のCanvasをアタッチ
+
+//    private void Awake()
+//    {
+//        if (Instance == null)
+//        {
+//            Instance = this;
+//        }
+//        else
+//        {
+//            Destroy(gameObject);
+//            return;
+//        }
+
+//        if (damageNumberPrefab == null)
+//            Debug.LogError("ScorePopupManager: Damage Number Prefab is not assigned!");
+
+//        if (canvasRect == null)
+//            Debug.LogError("ScorePopupManager: Canvas Rect is not assigned!");
+//    }
+
+//    /// <summary>
+//    /// ワールド座標をScreenSpace変換してCanvas上にポップアップを表示する
+//    /// </summary>
+//    /// <param name="worldPosition">攻撃者のワールド座標</param>
+//    /// <param name="customOffset">ワールド空間でのオフセット（オプション）</param>
+//    public static void ShowPopup(Vector3 worldPosition, Vector3? customOffset = null)
+//    {
+//        if (Instance == null || Instance.damageNumberPrefab == null || Instance.canvasRect == null)
+//            return;
+
+//        // ワールド座標にオフセットを加算
+//        Vector3 offset = customOffset ?? Vector3.zero;
+//        Vector3 targetWorldPos = worldPosition + offset;
+
+//        // カメラが存在しない場合はスキップ
+//        Camera cam = Camera.main;
+//        if (cam == null) return;
+
+//        // ワールド座標 → スクリーン座標
+//        Vector3 screenPos = cam.WorldToScreenPoint(targetWorldPos);
+
+//        // 画面外なら表示しない
+//        if (screenPos.z < 0) return;
+
+//        // スクリーン座標 → Canvas上のローカル座標
+//        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+//            Instance.canvasRect,
+//            screenPos,
+//            null,
+//            out Vector2 localPoint);
+
+//        // Canvas上の座標にスポーン
+//        Instance.damageNumberPrefab.SpawnGUI(Instance.canvasRect, localPoint);
+//    }
+//}

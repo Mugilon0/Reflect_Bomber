@@ -1,0 +1,31 @@
+interface IConnectionTokenProvider {
+    +GetConnectionToken() : byte[]
+}
+
+class RoomConfig {
+    +SessionName : string
+    +MaxPlayers  : int
+    +Password    : string
+    +HostComment : string
+    +MaxRounds   : int
+    +RoomMode    : RoomMode
+    +ExtraOptions : Dictionary<string,string>
+}
+
+class NetworkRunnerHandler {
+    -_tokenProvider : IConnectionTokenProvider
+    +OnLobbyJoinSuccess : event Action
+    +OnLobbyJoinFailure : event Action
+    +OnGameCreated      : event Action
+    +OnGameJoined       : event Action
+    +OnGameJoinFailed   : event Action
+
+    +Initialize(tokenProvider: IConnectionTokenProvider)
+    +OnJoinLobby()
+    +CreateGame(config: RoomConfig)
+    +JoinGame(sessionInfo: SessionInfo, password: string)
+}
+
+NetworkRunnerHandler ..> RoomConfig             : uses
+NetworkRunnerHandler ..> IConnectionTokenProvider : depends on
+GameManager ..|> IConnectionTokenProvider       : implements

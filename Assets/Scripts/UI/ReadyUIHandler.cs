@@ -1,73 +1,73 @@
-using Fusion;
-using TMPro;
-using UnityEngine;
+//using Fusion;
+//using TMPro;
+//using UnityEngine;
 
-public class ReadyUIHandler : MonoBehaviour // NetworkBehaviourは不要な場合が多い
-{
-    [Header("UI")]
-    public TextMeshProUGUI buttonReadyText;
-    public TextMeshProUGUI countDownText;
+//public class ReadyUIHandler : MonoBehaviour // NetworkBehaviourは不要な場合が多い
+//{
+//    [Header("UI")]
+//    public TextMeshProUGUI buttonReadyText;
+//    public TextMeshProUGUI countDownText;
 
-    private bool localPlayerIsReady = false;
+//    private bool localPlayerIsReady = false;
 
-    void Start()
-    {
-        // 初期UI状態は GameStateManager.Ready.onEnter で設定される
-    }
+//    void Start()
+//    {
+//        // 初期UI状態は GameStateManager.Ready.onEnter で設定される
+//    }
 
 
-    public void OnReadyButtonClicked()
-    {
-        localPlayerIsReady = !localPlayerIsReady;
-        UpdateButtonDisplay();
+//    public void OnReadyButtonClicked()
+//    {
+//        localPlayerIsReady = !localPlayerIsReady;
+//        UpdateButtonDisplay();
 
-        if (NetworkPlayer.Local != null)
-        {
-            var outfitHandler = NetworkPlayer.Local.GetComponent<CharacterOutfitHandler>(); //
-            if (outfitHandler != null)
-            {
-                outfitHandler.OnReady(localPlayerIsReady); //
-            }
-        }
-    }
+//        if (NetworkPlayer.Local != null)
+//        {
+//            var outfitHandler = NetworkPlayer.Local.GetComponent<CharacterOutfitHandler>(); //
+//            if (outfitHandler != null)
+//            {
+//                outfitHandler.OnReady(localPlayerIsReady); //
+//            }
+//        }
+//    }
 
-    private void UpdateButtonDisplay()
-    {
-        if (localPlayerIsReady)
-        {
-            buttonReadyText.text = "Not Ready";
-        }
-        else
-        {
-            buttonReadyText.text = "Ready";
-        }
-    }
+//    private void UpdateButtonDisplay()
+//    {
+//        if (localPlayerIsReady)
+//        {
+//            buttonReadyText.text = "Not Ready";
+//        }
+//        else
+//        {
+//            buttonReadyText.text = "Ready";
+//        }
+//    }
 
-    // GameStateManagerからローカルプレイヤーの準備状態をリセット/設定するために呼び出される
-    public void SetLocalPlayerReadyState(bool isReady)
-    {
-        localPlayerIsReady = isReady;
-        UpdateButtonDisplay(); // ボタン表示も更新
-    }
+//    // GameStateManagerからローカルプレイヤーの準備状態をリセット/設定するために呼び出される
+//    public void SetLocalPlayerReadyState(bool isReady)
+//    {
+//        localPlayerIsReady = isReady;
+//        UpdateButtonDisplay(); // ボタン表示も更新
+//    }
 
-    // UIにメッセージを表示
-    public void UpdateCountdownDisplay(byte remainingSeconds)
-    {
-        if (remainingSeconds == 0)
-            countDownText.text = ""; // もしくは "Waiting for other players..." など
-        else
-            countDownText.text = $"Battle starts in {remainingSeconds}";
-    }
+//    // UIにメッセージを表示
+//    public void UpdateCountdownDisplay(byte remainingSeconds)
+//    {
+//        if (remainingSeconds == 0)
+//            countDownText.text = ""; // もしくは "Waiting for other players..." など
+//        else
+//            countDownText.text = $"Battle starts in {remainingSeconds}";
+//    }
 
-    public void SetButtonText(string text)
-    {
-        buttonReadyText.text = text;
-    }
-    public void SetCountdownText(string text)
-    {
-        countDownText.text = text;
-    }
-}
+//    public void SetButtonText(string text)
+//    {
+//        buttonReadyText.text = text;
+//    }
+//    public void SetCountdownText(string text)
+//    {
+//        countDownText.text = text;
+//    }
+//}
 
 
 

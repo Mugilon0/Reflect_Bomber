@@ -21,6 +21,11 @@ public class WeaponManager : NetworkBehaviour
         fireCooldownTimer = TickTimer.CreateFromSeconds(Runner, duration);
     }
 
+    [Networked]
+    public NetworkBool IsLocked { get; set; }
+
+
+
     private void Awake()
     {
         weaponHandler = GetComponent<WeaponHandler>();
@@ -32,7 +37,7 @@ public class WeaponManager : NetworkBehaviour
 
     public override void FixedUpdateNetwork()
     {
-        if (!fireCooldownTimer.ExpiredOrNotRunning(Runner))
+        if (IsLocked || !fireCooldownTimer.ExpiredOrNotRunning(Runner))
             return;
 
         if (hpHandler != null && hpHandler.isDead)

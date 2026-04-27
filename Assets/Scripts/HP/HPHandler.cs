@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -11,7 +12,7 @@ public class HPHandler : NetworkBehaviour
 {
     [Networked(OnChanged = nameof(OnHPChanged))]
     byte HP { get; set; }
-    public byte CurrentHP => HP; // ライフアイコン用
+    public byte CurrentHP => HP;
 
     [Networked(OnChanged = nameof(OnStateChanged))]
     public bool isDead { get; set; }
@@ -19,7 +20,10 @@ public class HPHandler : NetworkBehaviour
     [Networked]
     public TickTimer InvincibilityTimer { get; set; }
 
-    bool isInitialized = false; //このスクリプトが初期化されているかを確認
+    public static event Action<NetworkPlayer, NetworkPlayer> OnKilled;
+    public static event Action<NetworkPlayer> OnDied;
+
+    bool isInitialized = false;
 
 
     const byte startingHP = 3;
@@ -34,9 +38,6 @@ public class HPHandler : NetworkBehaviour
 
     public GameObject playerModel;
     //public GameObject deathGameObjectPrefab;
-    [Header("HP1 Smoke Effect")]
-    [SerializeField] private GameObject blackSmokeParticle;
-
     public bool skipSettingStartValues = false;
 
     //    //Other components
@@ -93,7 +94,6 @@ public class HPHandler : NetworkBehaviour
         }
         else if (wasInvincible)
         {
-            // 無敵終了時に一度だけ全表示に戻す
             foreach (var renderer in renderers)
             {
                 renderer.enabled = true;
@@ -139,11 +139,10 @@ public class HPHandler : NetworkBehaviour
         //    uiOnHitImage.color = new Color(0, 0, 0, 0);
     }
 
-    IEnumerator ServerReviveCO() //リスポーンリクエストを出す
+    IEnumerator ServerReviveCO()
     {
         yield return new WaitForSeconds(2.0f);
 
-        Debug.Log($"リクエスリスポーン for {transform.name}");
         characterMovementHandler.RequestRespawn();
     }
 
@@ -151,14 +150,13 @@ public class HPHandler : NetworkBehaviour
     //    //Function only called on the server & used by weaponHandler
     public void OnTakeDamage(NetworkPlayer damageCausedByPlayerNickname, byte damageAmount)
     {
-        if(InvincibilityTimer.ExpiredOrNotRunning(Runner) == false)
+        if (InvincibilityTimer.ExpiredOrNotRunning(Runner) == false)
         {
             return;
         }
         //if (!Object.HasStateAuthority)
         //    return;
 
-        ////Only take damage while alive 死んでたらそれ以上ダメージ受けなくてよい
         if (isDead)
             return;
 
@@ -168,14 +166,11 @@ public class HPHandler : NetworkBehaviour
         HP -= damageAmount;
 
 
-        if (damageCausedByPlayerNickname != GetComponent<NetworkPlayer>())
+        var victim = GetComponent<NetworkPlayer>();
+        if (damageCausedByPlayerNickname != victim)
         {
-            // 攻撃者のScoreHandlerを取得して、スコア加算を依頼する
-            ScoreCalculator scoreCalculator = damageCausedByPlayerNickname.GetComponent<ScoreCalculator>();
-            if (scoreCalculator != null)
-            {
-                scoreCalculator.OnKill();
-            }
+            if (Object.HasStateAuthority)
+                OnKilled?.Invoke(damageCausedByPlayerNickname, victim);
         }
 
         Debug.Log($"{Time.time} {transform.name} took damage got {HP} left");
@@ -186,17 +181,18 @@ public class HPHandler : NetworkBehaviour
             Debug.Log($"Time.time) {transform.name} died");
 
             StartCoroutine(ServerReviveCO());
-
+            if (Object.HasStateAuthority)
+                OnDied?.Invoke(GetComponent<NetworkPlayer>());
             isDead = true;
         }
         else
         {
-            InvincibilityTimer = TickTimer.CreateFromSeconds(Runner, 3.0f);
+            InvincibilityTimer = TickTimer.CreateFromSeconds(Runner, 4.0f);
         }
 
     }
 
-    static void OnHPChanged(Changed<HPHandler> changed) // HPがへっている場合のみを扱う
+    static void OnHPChanged(Changed<HPHandler> changed)
     {
         Debug.Log($"{Time.time} OnHPChanged value {changed.Behaviour.HP}");
 
@@ -211,7 +207,6 @@ public class HPHandler : NetworkBehaviour
         if (newHP < oldHP)
             changed.Behaviour.OnHPReduced();
 
-        changed.Behaviour.UpdateSmokeEffect();
     }
 
     private void OnHPReduced()
@@ -220,31 +215,17 @@ public class HPHandler : NetworkBehaviour
             return;
 
 
-        Debug.Log("[HP] OnHPReduced called!");  // ← 追加
+        Debug.Log("[HP] OnHPReduced called!");
         StartCoroutine(OnHitCO());
 
-        playerAnimationHandler?.TriggerGetDamage(0.8f);
+        playerAnimationHandler?.TriggerGetDamage(1.0f);
     }
-
-    private void UpdateSmokeEffect()
-    {
-        if (blackSmokeParticle == null) return;
-        if (isDead || HP > 1)
-        {
-            blackSmokeParticle.SetActive(false);
-        }
-        else if (HP <= 1)
-        {
-            blackSmokeParticle.SetActive(true);
-        }
-    }
-
 
     static void OnStateChanged(Changed<HPHandler> changed)
     {
         Debug.Log($"{Time.time} OnStateChanged isDead {changed.Behaviour.isDead}");
 
-        bool isDeadCurrent = changed.Behaviour.isDead; // HPと同様の方法で実装
+        bool isDeadCurrent = changed.Behaviour.isDead;
 
         ////Load the old value
         changed.LoadOld();
@@ -260,22 +241,20 @@ public class HPHandler : NetworkBehaviour
 
     private void OnDeath()
     {
-        // DeathSFXを再生
+        // DeathSFX
         if (Object.HasInputAuthority)
         {
-            // 自分自身だった場合のみ、死亡SFXを再生
             AudioManager.Play("DeathSFX", AudioManager.MixerTarget.SFX);
         }
 
         Debug.Log($"{Time.time} OnDeath");
 
         playerModel.gameObject.SetActive(false);
-        hitboxRoot.HitboxRootActive = false; // 死んだプレイヤーに続けて攻撃できないようにする
+        hitboxRoot.HitboxRootActive = false;
         characterMovementHandler.SetCharacterControllerEnabled(false);
 
         if (EffectPoolManager.Instance != null)
         {
-            // Deathパーティクル
             EffectPoolManager.Instance.Play(EffectPoolManager.EffectType.Death, transform.position);
             EffectPoolManager.Instance.Play(EffectPoolManager.EffectType.Death2, transform.position);
         }
@@ -301,7 +280,6 @@ public class HPHandler : NetworkBehaviour
 
         InvincibilityTimer = TickTimer.None;
 
-        UpdateSmokeEffect();
     }
 
 

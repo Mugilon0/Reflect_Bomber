@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Fusion;
@@ -6,43 +6,32 @@ using TMPro;
 using UnityEngine.SceneManagement;
 using Cinemachine;
 using System;
-using UnityEngine.SocialPlatforms;
 using AAMAP;
 
 public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 {
+    [Networked]
+    public PlayerRef Ref { get; private set; }
+    [Networked]
+    public byte Index { get; private set; }
+    public bool IsSpectator => GetComponent<PlayerState>()?.IsSpectator ?? false;
+    //---------------------------
+
+
+
+
     public TextMeshProUGUI playerNickNameTM;
-    public static NetworkPlayer Local { get; set; } // “ü—ÍŒ ŒÀ‚ª‚ ‚éƒvƒŒƒCƒ„[‚Íƒ[ƒJƒ‹
+    public static NetworkPlayer Local { get; set; } 
 
-    public static Dictionary<PlayerRef, NetworkPlayer> ActivePlayers = new Dictionary<PlayerRef, NetworkPlayer>();
-
-    public Transform playerModel; // ƒŒƒCƒ„[‚ğ•Ï‚¦‚é‚Ì‚Étransform‚ÉƒAƒNƒZƒX‚·‚é•K—v‚ª‚ ‚é
+    public Transform playerModel; 
 
     //public CinemachineVirtualCamera virtualcamera;
 
-    [Networked(OnChanged = nameof(OnNickNameChanged))]  // ©‚¿‚á‚ñ‚ÆÀ‘•‚µ‚È‚¯‚ê‚Î—LŒø‚É‚µ‚Ü‚·IIIIIIIII
-    public NetworkString<_16> nickName { get; set; } // Å‘åƒTƒCƒY16
-
-    [Networked(OnChanged = nameof(OnScoreChanged))]
-    public int score { get; set; } = 0;
-
-    [Networked, Capacity(4)]
-    public NetworkArray<int> RoundScores { get; }
-    public int TotalScore
-    {
-        get
-        {
-            int total = 0;
-            for (int i = 0; i < RoundScores.Length; i++)
-                total += RoundScores[i];
-            return total;
-        }
-    }
+    [Networked(OnChanged = nameof(OnNickNameChanged))] 
+    public NetworkString<_16> nickName { get; set; } 
 
     [Networked]
     public NetworkBool IsLoaded { get; set; } //
-
-    private InGameScoreUIHandler scoreUIHandler;
 
     // Remote Client Token Hash
     [Networked] public int token { get; set; }
@@ -69,11 +58,10 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 
     private void Awake()
     {
-        // ‚±‚ÌƒIƒuƒWƒFƒNƒg‚ªƒV[ƒ“‘JˆÚ‚Å”jŠü‚³‚ê‚È‚¢‚æ‚¤‚É‚·‚é
         DontDestroyOnLoad(this.gameObject);
     }
 
-    // component‰Šú‰»—p
+
     public CharacterOutfitHandler OutfitHandler
     {
         get
@@ -126,62 +114,48 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 
 
 
-    public bool IsReady => OutfitHandler?.isDoneWithCharacterSelection ?? false;
+    public bool IsReady => GetComponent<PlayerState>()?.IsReady ?? false;
     public bool IsDead => HPHandler?.isDead ?? false;
+
+
+    public void Lock()
+    {
+        if (MovementHandler != null) MovementHandler.IsLocked = true;
+        if (WeaponManager != null) WeaponManager.IsLocked = true;
+        if (AnimationHandler != null) AnimationHandler.IsLocked = true;
+    }
+
+    public void Unlock()
+    {
+        if (MovementHandler != null) MovementHandler.IsLocked = false;
+        if (WeaponManager != null) WeaponManager.IsLocked = false;
+        if (AnimationHandler != null) AnimationHandler.IsLocked = false;
+    }
 
 
     public void LockAllActions(float duration)
     {
         if (MovementHandler != null)
             MovementHandler.MoveLockTimer = TickTimer.CreateFromSeconds(Runner, duration);
-
         if (WeaponManager != null)
             WeaponManager.LockWeapons(duration);
-
         if (AnimationHandler != null)
             AnimationHandler.AnimationLockTimer = TickTimer.CreateFromSeconds(Runner, duration);
     }
+
     public void UnlockAllActions()
     {
-        if (MovementHandler != null)
-            MovementHandler.MoveLockTimer = TickTimer.None;
-
-        if (WeaponManager != null)
-            WeaponManager.LockWeapons(0f);
-
-        if (AnimationHandler != null)
-            AnimationHandler.AnimationLockTimer = TickTimer.None;
+        if (MovementHandler != null) MovementHandler.MoveLockTimer = TickTimer.None;
+        if (WeaponManager != null) WeaponManager.LockWeapons(0f);
+        if (AnimationHandler != null) AnimationHandler.AnimationLockTimer = TickTimer.None;
     }
 
-    /// <summary>
-    /// ƒQ[ƒ€ƒvƒŒƒCƒf[ƒ^‚ğƒNƒŠƒAiƒ‰ƒEƒ“ƒhI—¹‚È‚Çj
-    /// 
-    /// g—p—áF
-    /// PlayerRegistry.ForEach(p => p.ClearGameplayData());
-    /// </summary>
-    public void ClearGameplayData()
-    {
-        score = 0;
-        IsLoaded = false;
-
-        for (int i = 0; i < RoundScores.Length; i++)
-            RoundScores.Set(i, 0);
-
-        if (HPHandler != null)
-            HPHandler.OnRespawned();
-    }
-
-
-
-
-
-
-    public override void Spawned() //ƒvƒŒƒCƒ„[‚ª¶¬‚³‚ê‚½ê‡‚ÉŒÄ‚Ño‚³‚ê‚é
+    public override void Spawned() 
     {
         bool isReadyScene = SceneManager.GetActiveScene().name == "Ready";
-        if (Object.HasInputAuthority) // ‚±‚ê‚È‚¢‚Æ‘S‚Ä‚ÌƒNƒ‰ƒCƒAƒ“ƒg‚ÅÀs‚³‚ê‚é1
+        if (Object.HasInputAuthority)
         {
-            Local = this; // ƒ[ƒJƒ‹ƒvƒŒƒCƒ„[‚ÌQÆ
+            Local = this;
 
             if (isReadyScene)
             {
@@ -199,11 +173,11 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
             else
             {
                 // Sets the layer of the local players model
-                //Utils.SetRenderLayerInChildren(playerModel, LayerMask.NameToLayer("LocalPlayerModel")); //@ƒŒƒCƒ„[‚ğİ’è@–Ú‚ÍƒŒƒ“ƒ_ƒŠƒ“ƒO‚³‚ê‚È‚­‚È‚é
+                //Utils.SetRenderLayerInChildren(playerModel, LayerMask.NameToLayer("LocalPlayerModel"));
 
                 // Disable main camera
                 if (Camera.main != null)
-                    Camera.main.gameObject.SetActive(false); //ƒ[ƒJƒ‹ƒJƒƒ‰‚ğg—p‚·‚é‚Æ‚«‚ÍƒƒCƒ“ƒJƒƒ‰‚Í–³Œø‚É‚·‚é
+                    Camera.main.gameObject.SetActive(false);
 
                 //Enabled 1 audio listner
                 AudioListener audioListner = GetComponentInChildren<AudioListener>(true);
@@ -224,9 +198,9 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
             }
 
 
-            RPC_SetNickName(GameManager.instance.playerNickName); // rpc‚ğ‘—M‚·‚é
+            RPC_SetNickName(SaveDataManager.Current.NickName);
 
-            // tps‹“_‚Å©•ª‚Ì–¼‘O‚ªŒ©‚¦‚È‚¢‚æ‚¤‚É‚·‚é
+
             playerNickNameTM.gameObject.SetActive(false);
 
             Debug.Log("Spawned local player");
@@ -237,106 +211,51 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
             // Enabled the local camera
             localCameraHandler.localCamera.enabled = false;
 
-            //localUI.SetActive(false); //UI‚à‚¯‚·
+            //localUI.SetActive(false);
 
             // Only 1 audio listener is allowed in the scene so disable remote players audio listener 
-            AudioListener audioListener = GetComponentInChildren<AudioListener>();  // ‰¹‚É‚Â‚¢‚Ä‚àã‚Æ“¯—l
+            AudioListener audioListener = GetComponentInChildren<AudioListener>();  
             audioListener.enabled = false;
 
 
-            Debug.Log("Spawned remote player"); //‚»‚¤‚Å‚È‚¢‚È‚çƒŠƒ‚[ƒgƒvƒŒƒCƒ„[
+            Debug.Log("Spawned remote player"); 
         }
 
 
 
-        // ƒvƒŒƒCƒ„[‚Ì‰E‘¤‚ğ’è‹`‚·‚é‚½‚ß 4/17
-        ActivePlayers[Object.InputAuthority] = this;
-
+        // 4/17
         // Make it easier to tell which player is which
-        transform.name = $"P_{Object.Id}"; // ¶¬‚³‚ê‚éƒvƒŒƒCƒ„[‚Ì–¼‘O‚ğ•ÏX
+        transform.name = $"P_{Object.Id}";
 
-        scoreUIHandler = FindObjectOfType<InGameScoreUIHandler>(true);
-        //if (scoreUIHandler != null) // OnNickNameChanged()“à‚ÅŒÄ‚Ño‚·‚Ì‚Å•s—v‚É‚È‚Á‚½
-        //    scoreUIHandler.UpdateAllPlayerScores(); // ‰ŠúƒXƒRƒA‚Ì•\¦‚à‚±‚±‚Å‚Å‚«‚é
+        //if (scoreUIHandler != null) // OnNickNameChanged()
+        //    scoreUIHandler.UpdateAllPlayerScores(); 
 
-        if (Object.HasInputAuthority)
-        {
-            // InterfaceManager‚ªŠÇ—‚·‚é‘—Mƒ{ƒ^ƒ“‚ÌonPressedƒCƒxƒ“ƒg‚ÉA©•ª‚ÌOnSendƒƒ\ƒbƒh‚ğ“o˜^iw“Çj
-            if (InterfaceManager.Instance != null && InterfaceManager.Instance.readyMessageButtonSend != null)
-            {
-                InterfaceManager.Instance.readyMessageButtonSend.onPressed += OnSend;
-            }
-        }
-
-
-
-
-
-        //var mapIcon = GetComponentInChildren<MapIcon>();
-
-        //// ‚à‚µMapIcon‚ªŒ©‚Â‚©‚Á‚½‚ç
-        //if (mapIcon != null)
+        //if (Object.HasInputAuthority)
         //{
-        //    // ƒV[ƒ““à‚©‚çuMinimap Camerav‚Æ‚¢‚¤–¼‘O‚ÌƒQ[ƒ€ƒIƒuƒWƒFƒNƒg‚ğ’T‚·
-        //    var minimapCameraObject = GameObject.Find("Minimap Camera");
 
-        //    // ‚à‚µMinimap Camera‚ªŒ©‚Â‚©‚Á‚½‚ç
-        //    if (minimapCameraObject != null)
+        //    if (InterfaceManager.Instance != null && InterfaceManager.Instance.readyMessageButtonSend != null)
         //    {
-        //        // MapIcon‚ÌMinimap Camera—“‚ÉAŒ©‚Â‚¯‚Ä‚«‚½ƒJƒƒ‰‚ğ©“®‚Åİ’è‚·‚é
-        //        mapIcon.SetMinimapCamera(minimapCameraObject);
+        //        InterfaceManager.Instance.readyMessageButtonSend.onPressed += OnSend;
         //    }
-        //    else
-        //    {
-        //        // Œ©‚Â‚©‚ç‚È‚©‚Á‚½ê‡‚ÍAƒGƒ‰[ƒƒbƒZ[ƒW‚ğƒRƒ“ƒ\[ƒ‹‚É•\¦‚·‚é
-        //        Debug.LogError("Minimap Camera‚ªƒV[ƒ“‚ÉŒ©‚Â‚©‚è‚Ü‚¹‚ñ‚Å‚µ‚½B");
-        //    }
-
-        //    // (‚à‚µ‘S‰æ–Êƒ}ƒbƒv‚àg‚¤‚È‚çAMap Camera‚à“¯—l‚É’T‚µ‚Äİ’è‚µ‚Ü‚·)
-        //    // var mapCameraObject = GameObject.Find("Map Camera");
-        //    // if (mapCameraObject != null)
-        //    // {
-        //    //     mapIcon.SetMapCamera(mapCameraObject);
-        //    // }
-        //}
-        //else
-        //{
-        //    Debug.LogError("ƒvƒŒƒCƒ„[ƒvƒŒƒnƒu‚Ìq‚ÉMapIcon‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ‚Å‚µ‚½B");
         //}
 
-
-        //// ššš ƒ~ƒjƒ}ƒbƒv‚É©•ª‚ğ’ÇÕƒ^[ƒQƒbƒg‚Æ‚µ‚Äİ’è‚·‚é ššš
-        //// ƒV[ƒ““à‚É‚ ‚éMinimapManagerƒRƒ“ƒ|[ƒlƒ“ƒg‚ğ’T‚·
-        //var minimapManager = FindObjectOfType<MinimapManager>();
-
-        //// ‚à‚µMinimapManager‚ªŒ©‚Â‚©‚Á‚½‚ç
-        //if (minimapManager != null)
-        //{
-        //    // ’ÇÕƒ^[ƒQƒbƒg(Target Object)‚É©•ª©g(‚±‚ÌƒvƒŒƒCƒ„[ƒIƒuƒWƒFƒNƒg)‚ğİ’è‚·‚é
-        //    minimapManager.SetTargetObject(this.gameObject);
-        //}
-        //else
-        //{
-        //    Debug.LogError("Minimap‚ªƒV[ƒ“‚ÉŒ©‚Â‚©‚è‚Ü‚¹‚ñ‚Å‚µ‚½B");
-        //}
 
 
     }
 
-    public void PlayerLeft(PlayerRef player) // ƒvƒŒƒCƒ„[‚ª—£‚ê‚é‚Æ‚«‚Ìˆ—
+    public void PlayerLeft(PlayerRef player)
     {
         //if (Object.HasStateAuthority)
         //{
         //    if (Runner.TryGetPlayerObject(player, out NetworkObject playerLeftNetworkObject))
         //        Local.GetComponent<NetworkInGameMessages>().SendInGameRPCMessage(playerLeftNetworkObject.GetComponent<NetworkPlayer>().nickName.ToString(), "left");
-        //}  //  ƒƒbƒZ[ƒWUI‚Í‚È‚¢‚Ì‚ÅÈ—ª
 
 
         if (player == Object.InputAuthority)
             Runner.Despawn(Object);
     }
 
-    static void OnNickNameChanged(Changed<NetworkPlayer> changed) // ŒÄ‚Ño‚³‚ê‚é‚Ì‚Í‚±‚Á‚¿
+    static void OnNickNameChanged(Changed<NetworkPlayer> changed)
     {
         Debug.Log($"{Time.time} OnHPChanged value {changed.Behaviour.nickName}");
 
@@ -347,14 +266,11 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
     private void OnNickNameChanged()
     {
         Debug.Log($"Nickname changed for player to {nickName} for player {gameObject.name}");
-
         playerNickNameTM.text = nickName.ToString();
-
-        if (scoreUIHandler != null)
-            scoreUIHandler.UpdateAllPlayerScores();
+        // å‰Šé™¤: scoreUIHandler.RefreshAllScores();
     }
 
-    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)] //“ü—ÍÒ¨ƒT[ƒo[ rpc‚ğóM‚·‚é
+    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)] 
     public void RPC_SetNickName(string nickName, RpcInfo info = default)
     {
         Debug.Log($"RPC SetNickName {nickName}");
@@ -362,77 +278,21 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
     }
 
 
-    // Ready“à‚É‚¨‚¯‚éƒƒbƒZ[ƒW‘—óM‹@”\
-    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
-    public void RPC_SendMessage(string message, RpcInfo info = default)
-    {
-        // ƒƒbƒZ[ƒW‚Í16•¶š‚Ü‚Å
-        if (message.Length > 16)
-            message = message.Substring(0, 16);
-
-        if (GameStateManager.Instance != null)
-        {
-            // "this.nickName" ‚ğg‚Á‚ÄA‘—MÒ‚Ì–¼‘O‚ğ’¼Úæ“¾‚µ‚Ü‚·B
-            Debug.Log($"Player {this.nickName} sent message: {message}");
-
-            // GameStateManager‚Ì’†ŒpRPC‚ğŒÄ‚Ño‚µ‚Ü‚·B
-            GameStateManager.Instance.RPC_RelayChatMessage(this.nickName.ToString(), message);
-        }
-        else
-        {
-            Debug.LogError("GameStateManager.Instance is null. Cannot relay chat message.");
-        }
-    }
-
-    private void OnSend()
-    {
-        // ©•ªi“ü—ÍŒ ŒÀ‚ğ‚ÂƒvƒŒƒCƒ„[j‚©‚ç‚ÌŒÄ‚Ño‚µ‚Å‚È‚¯‚ê‚ÎA‰½‚à‚µ‚È‚¢
-        // ¦‚±‚Ìƒ`ƒFƒbƒN‚ÍASpawned‚Åƒ[ƒJƒ‹ƒvƒŒƒCƒ„[‚Ì‚İ‚ªƒCƒxƒ“ƒg“o˜^‚·‚é‚½‚ßAŒµ–§‚É‚Í•s—v‚Å‚·‚ªAˆÀ‘S‚Ì‚½‚ß‚É“ü‚ê‚Ä‚¨‚­‚Æ—Ç‚¢‚Å‚·B
-        if (!Object.HasInputAuthority)
-        {
-            return;
-        }
-
-        // InterfaceManagerŒo—R‚Å“ü—Í—“‚ÌƒeƒLƒXƒg‚ğæ“¾
-        string message = InterfaceManager.Instance.readyMessageInputField.text;
-
-        // “ü—Í‚ª‹ó‚Å‚È‚¯‚ê‚ÎRPC‚ğŒÄ‚Ño‚·
-        if (!string.IsNullOrWhiteSpace(message))
-        {
-            RPC_SendMessage(message);
-
-            // ‘—MŒãA“ü—Í—“‚ğƒNƒŠƒA‚·‚é
-            InterfaceManager.Instance.readyMessageInputField.text = "";
-        }
-    }
-
-
-
-
+    //[Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
     void OnDestroy()
     {
         if (localCameraHandler != null)
             Destroy(localCameraHandler.gameObject);
 
-        // ActivePlayers ‚©‚ç©g‚ğíœ
-        if (Object != null && Object.InputAuthority.IsValid && ActivePlayers.ContainsKey(Object.InputAuthority))
-        {
-            if (ActivePlayers[Object.InputAuthority] == this)
-            {
-                ActivePlayers.Remove(Object.InputAuthority);
-            }
-        }
-
-        if (Object != null && Object.HasInputAuthority)
-        {
-            if (InterfaceManager.Instance != null && InterfaceManager.Instance.readyMessageButtonSend != null)
-            {
-                InterfaceManager.Instance.readyMessageButtonSend.onPressed -= OnSend;
-            }
-        }
+        //if (Object != null && Object.HasInputAuthority)
+        //{
+        //    if (InterfaceManager.Instance != null && InterfaceManager.Instance.readyMessageButtonSend != null)
+        //    {
+        //        InterfaceManager.Instance.readyMessageButtonSend.onPressed -= OnSend;
+        //    }
+        //}
     }
 
-    // ššš C³“_ 3: OnEnable/OnDisable/OnSceneLoaded ‚ğC³ ššš
     void OnEnable()
     {
         SceneManager.sceneLoaded += OnSceneLoaded;
@@ -445,25 +305,24 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        Debug.Log("OnSceneLoaded‚ğŒÄ‚Ñ‚Ü‚·");
+        Debug.Log("OnSceneLoaded");
         if (Object == null || !Object.IsValid) return;
 
         Debug.Log($"NetworkPlayer {Object.Id}: OnSceneLoaded for scene '{scene.name}'.");
 
-        // V‚µ‚¢ƒV[ƒ“—p‚Ì‰Šú‰»ˆ— (Spawned‚ÌƒƒWƒbƒN‚ğQl‚ÉÄ®—)
+
         bool isReadyScene = scene.name == "Ready";
         bool isWorld1Scene = scene.name == "World1";
 
-        if (Object.HasInputAuthority) // ƒ[ƒJƒ‹ƒvƒŒƒCƒ„[‚Ìˆ—
+        if (Object.HasInputAuthority) 
         {
             if (isReadyScene)
             {
-                // ReadyƒV[ƒ“‚É–ß‚Á‚Ä‚«‚½ê‡‚È‚Ç‚Ìİ’è
                 localCameraHandler.gameObject.SetActive(false);
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
             }
-            else if(isWorld1Scene) // "World1" ‚È‚Ç‚ÌƒQ[ƒ€ƒV[ƒ“‚Å‚Ìİ’è
+            else if (isWorld1Scene) 
             {
                 //Utils.SetRenderLayerInChildren(playerModel, LayerMask.NameToLayer("LocalPlayerModel"));
                 if (Camera.main != null) Camera.main.gameObject.SetActive(false);
@@ -480,66 +339,58 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
 
 
 
-                // ˆÈ‰ºMiinimap‚ÌQÆ‚ÉŠÖ‚·‚éˆ—
-                // DontDestroyOnLoad‚Å‚¿‰z‚³‚ê‚½InterfaceManager‚ğ’T‚·
-                InterfaceManager interfaceManager = FindObjectOfType<InterfaceManager>();
-                if (interfaceManager == null)
+                // minimapé–¢é€£
+
+                UIManager uiManager = FindObjectOfType<UIManager>();
+                if (uiManager == null)
                 {
-                    Debug.LogError("InterfaceManager‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñI");
                     return;
                 }
 
-                // InterfaceManager‚Ì’†‚©‚çA”ñƒAƒNƒeƒBƒu‚ÈMinimapManager‚ğ’T‚·
-                MinimapManager minimapManager = interfaceManager.GetComponentInChildren<MinimapManager>(true);
+                MinimapManager minimapManager = uiManager.GetComponentInChildren<MinimapManager>(true);
                 if (minimapManager == null)
                 {
-                    Debug.LogError("InterfaceManager“à‚ÉMinimap‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñI");
                     return;
                 }
 
-                // ©•ª‚Ìq‚©‚çMapIcon‚ğ’T‚·
                 MapIcon mapIcon = GetComponentInChildren<MapIcon>();
                 if (mapIcon == null)
                 {
-                    Debug.LogError("ƒvƒŒƒCƒ„[ƒvƒŒƒnƒu‚Ìq‚ÉMapIcon‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñI");
                     return;
                 }
 
-                // World1ƒV[ƒ“‚©‚çuMinimap Camerav‚ğ’T‚·
                 GameObject minimapCameraObject = GameObject.Find("Minimap Camera");
                 if (minimapCameraObject == null)
                 {
-                    Debug.LogError("World1ƒV[ƒ“‚ÉMinimap Camera‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñI");
                     return;
-                } else
+                }
+                else
                 {
-                    Debug.Log("Minimap camera‚ğ‚İ‚Â‚¯‚Ü‚µ‚½");
+                    Debug.Log("Minimap cameraã‚’è¦‹ã¤ã‘ãŸ");
                 }
 
-                    // --- ‚·‚×‚Ä‚Ì•”•i‚ªŒ©‚Â‚©‚Á‚½‚Ì‚ÅAÚ‘±‚ğŠJn ---
+   
 
-                    // 1. MapIcon‚ÉƒJƒƒ‰‚ğ‹³‚¦‚é
-                    mapIcon.SetMinimapCamera(minimapCameraObject);
+                mapIcon.SetMinimapCamera(minimapCameraObject);
 
-                // 2. ƒ~ƒjƒ}ƒbƒv‚É’ÇÕƒ^[ƒQƒbƒgi©•ª©gj‚ğ‹³‚¦‚é
+      
                 minimapManager.SetTargetObject(this.gameObject);
 
                 minimapManager.SetCamera(minimapCameraObject);
 
 
-                Debug.Log("ƒ~ƒjƒ}ƒbƒv‚ÌÚ‘±‚ªŠ®—¹‚µ‚Ü‚µ‚½I");
+
 
 
             }
         }
-        else // ƒŠƒ‚[ƒgƒvƒŒƒCƒ„[‚Ìˆ—
+        else
         {
             localCameraHandler.localCamera.enabled = false;
             var audioListener = GetComponentInChildren<AudioListener>(true);
             if (audioListener != null) audioListener.enabled = false;
         }
 
-        // ƒQ[ƒ€ƒV[ƒ“‚É“ü‚Á‚½‚çƒŠƒXƒ|[ƒ“‚ğ—v‹
         if (!isReadyScene && Object.HasStateAuthority)
         {
             var ch = GetComponent<CharacterMovementHandler>();
@@ -554,29 +405,6 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
         }
     }
 
-    static void OnScoreChanged(Changed<NetworkPlayer> changed)
-    {
-        changed.Behaviour.OnScoreChanged();
-    }
-
-    private void OnScoreChanged()
-    {
-        //Debug.Log($"ƒXƒRƒA‚ª•ÏX‚³‚ê‚Ü‚µ‚½: {score}");
-
-        //if (Object.HasInputAuthority)
-        //{
-        //    // ƒ[ƒJƒ‹‚Ì‚İ‚ªUIXV‚·‚é‚æ‚¤‚É‚·‚é
-        //    GameManager.instance.inGameScoreUIHandler.UpdateScoreboard();
-        //}
-        //if (Object.HasInputAuthority)
-        //{
-
-        if (scoreUIHandler != null)
-            scoreUIHandler.UpdateAllPlayerScores();
-        //}
-
-    }
-
     // NetworkPlayer.cs
     //public void InitializeForNewScene()
     //{
@@ -588,14 +416,20 @@ public class NetworkPlayer : NetworkBehaviour, IPlayerLeft
     //    {
     //        if (Object.HasStateAuthority && Object.HasInputAuthority)
     //        {
-    //            Spawned(); // ƒJƒƒ‰‚âUI‚È‚Çƒ[ƒJƒ‹İ’è‚ÌÄ“K—p
+    //            Spawned();
     //        }
     //        if (Object.HasStateAuthority)
     //        {
-    //            GetComponent<CharacterMovementHandler>()?.RequestRespawn(); // ƒŠƒXƒ|[ƒ“—v‹
+    //            GetComponent<CharacterMovementHandler>()?.RequestRespawn();
     //        }
     //    }
     //}
+
+    public void Server_Init(PlayerRef pRef, byte index)
+    {
+        Ref = pRef;
+        Index = index;
+    }
 
 
 }

@@ -1,0 +1,193 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+'========================
+' Network sync only
+'========================
+enum EGameStateNet {
+  Off
+  Lobby
+  Ready
+  Loading
+  Intro
+  Game
+  Outro
+  Postgame
+}
+
+note right of EGameStateNet
+  ・ネットワーク同期用の最小状態表現
+  ・State の種類識別のみ
+  ・遷移ルールは持たない
+end note
+
+'========================
+' State abstraction
+'========================
+interface IGameState {
+  +OnEnter(prev : IGameState)
+  +OnUpdate()
+  +OnExit(next : IGameState)
+  +IsComplete() : bool
+  +NetState : EGameStateNet
+}
+
+note right of IGameState
+  【役割】
+  ・1つの状態の振る舞いを表す
+  ・「今」の処理だけを担当
+
+  【やらないこと】
+  ・次の State を決めない
+  ・フローやラウンド数を知らない
+  ・シングル/マルチを意識しない
+end note
+
+'========================
+' Game Flow Strategy
+'========================
+interface IGameFlowStrategy {
+  +DecideNext(current : IGameState) : IGameState
+}
+
+note right of IGameFlowStrategy
+  【役割】
+  ・ゲーム全体の進行ルールを決定
+  ・State の順序、分岐、ループを管理
+
+  【知っていること】
+  ・現在の State の識別子
+  ・ラウンド数 / モード差分
+
+  【知らないこと】
+  ・State の内部実装
+end note
+
+'========================
+' State machine (pure logic)
+'========================
+class StateMachine {
+  -current : IGameState
+  -flow : IGameFlowStrategy
+
+  +Initialize(initial : IGameState)
+  +Update()
+  +ChangeState(next : IGameState)
+}
+
+note right of StateMachine
+  【役割】
+  ・State の切り替えを実行する
+  ・OnEnter / OnExit の呼び出し管理
+
+  【特徴】
+  ・遷移ルールは持たない
+  ・Strategy の判断に従うだけ
+end note
+
+'========================
+' Photon bridge / Owner
+'========================
+class GameStateManager <<NetworkBehaviour>> {
+  -stateMachine : StateMachine
+  -states : Dictionary<EGameStateNet, IGameState>
+  -flowStrategy : IGameFlowStrategy
+
+  +Current : EGameStateNet
+  +Previous : EGameStateNet
+
+  +Spawned()
+  +FixedUpdateNetwork()
+  +Server_SetState(state : EGameStateNet)
+}
+
+note right of GameStateManager
+  【役割】
+  ・Photon Runner 単位の所有者
+  ・ネットワーク同期の窓口
+
+  【責務】
+  ・StateMachine の生成と保持
+  ・使用する Strategy の選択
+end note
+
+'========================
+' Concrete States
+'========================
+class LobbyState
+class ReadyState
+class LoadingState
+class IntroState
+class GamePlayState
+class OutroState
+class PostgameState
+
+note right of LobbyState
+  具体 State
+  ・単一責務
+  ・再利用可能
+end note
+
+'========================
+' Concrete Strategies
+'========================
+class OnlineRoundFlow
+class SingleRoundFlow
+
+note right of OnlineRoundFlow
+  ・マルチプレイ用フロー
+  ・ラウンド数管理
+  ・Loading 挿入制御
+end note
+
+note right of SingleRoundFlow
+  ・シングル用フロー
+  ・現状は未使用
+end note
+
+'========================
+' Realization
+'========================
+IGameState <|.. LobbyState
+IGameState <|.. ReadyState
+IGameState <|.. LoadingState
+IGameState <|.. IntroState
+IGameState <|.. GamePlayState
+IGameState <|.. OutroState
+IGameState <|.. PostgameState
+
+IGameFlowStrategy <|.. OnlineRoundFlow
+IGameFlowStrategy <|.. SingleRoundFlow
+
+'========================
+' Relationships (STRICT)
+'========================
+GameStateManager *-- StateMachine : owns
+GameStateManager *-- IGameFlowStrategy : selects
+StateMachine *-- IGameFlowStrategy : uses
+StateMachine ..> IGameState : depends on
+IGameState --> EGameStateNet : has value
+
+
+
+' class Player <<MonoBehaviour>> {
+'     - float speed
+'     - int hp
+'     + void Move()
+'     + void TakeDamage(int dmg)
+' }
+
+' class Weapon {
+'     + int power
+'     + void Attack()
+' }
+
+' class GameManager <<Singleton>> {
+'     + static GameManager Instance
+'     + void GameOver()
+' }
+
+' Player --> Weapon
+' Player --> GameManager
+
+@enduml

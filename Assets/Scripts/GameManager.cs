@@ -1,10 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-public class GameManager : MonoBehaviour
+public class GameManager : MonoBehaviour, IConnectionTokenProvider
 {
-    //Static instance of GameManager so other scripts can access it
     public static GameManager instance = null;
 
     byte[] connectionToken;
@@ -25,10 +22,8 @@ public class GameManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
-    // Start is called before the first frame update
     void Start()
     {
-        //Check if token is valid, if not get a new one
         if (connectionToken == null)
         {
             connectionToken = ConnectionTokenUtils.NewToken();
@@ -45,5 +40,4 @@ public class GameManager : MonoBehaviour
     {
         return connectionToken;
     }
-
 }

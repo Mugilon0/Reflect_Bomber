@@ -1,29 +1,59 @@
-using Fusion;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using Fusion;
 
+/// <summary>
+/// ゲーム中のスコアボードUI管理
+/// PlayerScore.RoundScoreのOnChangedで自動更新される
+/// </summary>
 public class InGameScoreUIHandler : MonoBehaviour
 {
     [SerializeField] private Transform scoreBoardParent;
     [SerializeField] private GameObject scoreEntryPrefab;
 
-    Dictionary<PlayerRef, TextMeshProUGUI> scoreEntries = new Dictionary<PlayerRef, TextMeshProUGUI>();
+    private Dictionary<PlayerRef, TextMeshProUGUI> _scoreEntries = new Dictionary<PlayerRef, TextMeshProUGUI>();
 
-    public void UpdateAllPlayerScores()
+    private void OnEnable()
     {
-        foreach (var kvp in NetworkPlayer.ActivePlayers)
-        {
-            PlayerRef playerRef = kvp.Key;
-            NetworkPlayer player = kvp.Value;
+        RefreshAllScores();
+    }
 
-            if (!scoreEntries.ContainsKey(playerRef))
+    private void OnDisable()
+    {
+        ClearEntries();
+    }
+
+    public void RefreshAllScores()
+    {
+        if (PlayerRegistry.Instance == null) return;
+
+        PlayerRegistry.ForEach(p =>
+        {
+            var playerScore = p.GetComponent<PlayerScore>();
+            if (playerScore == null) return;
+
+            PlayerRef pRef = p.GetComponent<NetworkObject>().InputAuthority;
+
+            if (!_scoreEntries.ContainsKey(pRef))
             {
                 var entry = Instantiate(scoreEntryPrefab, scoreBoardParent);
-                scoreEntries[playerRef] = entry.GetComponent<TextMeshProUGUI>();
+                _scoreEntries[pRef] = entry.GetComponent<TextMeshProUGUI>();
             }
 
-            scoreEntries[playerRef].text = $"{player.nickName}: {player.score}";
+            string nickName = p.nickName.Value;
+            int score = playerScore.RoundScore;
+            _scoreEntries[pRef].text = $"{nickName}: {score}";
+        });
+    }
+
+    private void ClearEntries()
+    {
+        foreach (var entry in _scoreEntries.Values)
+        {
+            if (entry != null)
+                Destroy(entry.gameObject);
         }
+        _scoreEntries.Clear();
     }
 }
